@@ -4,14 +4,13 @@
 license: GPLv3
 name: lib_IPFS
 type: library
-version: 0.1
+version: 0.2
 
 
 /* Notes
 This is a library for interfacing with the IPFS.
 
-added QmbFMke1KXqnYyBBWxB74N4c5SBnJMVAiMNRcGu6x1AwQH 
-added QmYuAjq9hB5uezxeNanc8tmfxR8qepgcQ7ebX4AhoRydvF /Users/BabyBlue/Desktop/Wikipedia Images/CCCamp11_Night.jpg
+The aim here is to enable true decentralised, serverless Livecode, which we can use for rapid development of Dapps.
 */
 
 
