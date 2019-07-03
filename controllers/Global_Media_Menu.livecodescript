@@ -16,6 +16,19 @@ end submenu_Ipfs
 on _
 end _
 
+on menu_PinterestAuthenticatonArray
+   put user_GetArray (cPinterestModelShortFile) into authenticationArray
+   display_Array authenticationArray
+end menu_PinterestAuthenticatonArray
+
+on _
+end _
+
+on menu_TestPageJson
+   put "https://audioboom.com/posts/3836093-raspberrypad" into someURL
+   put audioboom_ClipJsonFromUrl (someURL)
+end menu_TestPageJson
+
 on menu_TestAudioBoomAccount
    put audioboom_GetAccountArray() into accountArray
    display_Array accountArray
@@ -28,7 +41,17 @@ end menu_TestPostAudioBoom
 
 on menu_AuthenticateAudioboom
    audioboom_Authenticate
+   put the result into audioboomAuthArray
+   
+   display_Array audioboomAuthArray, "audioboom_Authenticate", "Global | Media | Menu"
 end menu_AuthenticateAudioboom
+
+on menu_RefreshToken
+   audioboom_RefreshAccessToken
+   put the result into audioboomAuthArray
+   
+   display_Array audioboomAuthArray, "audioboom_Authenticate", "Global | Media | Menu"
+end menu_RefreshToken
 
 on _
 end _

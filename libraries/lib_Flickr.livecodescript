@@ -47,11 +47,11 @@ function flickr_ConstructPhotoMapPageArray pageTitle, photoDescription, imageURL
    put pageTitle into imageCaption
    put fedwiki_ConstructImageHtml (imageURL, imageCaption, imageLink, imageLinkTag) into imageHTML
    */
-   fedwiki_AddHtmlToPageArray pageArray, imageHTML
+   pageArray_AddHtml pageArray, imageHTML
    
    repeat for each line someLine in photoDescription
       put fedwiki_JsonEncode (someLine) into nextParagraph
-      fedwiki_AddParagraphToPageArray pageArray, nextParagraph
+      pageArray_AddText pageArray, nextParagraph
    end repeat
    
    if pLocationArray is an array then
@@ -60,7 +60,7 @@ function flickr_ConstructPhotoMapPageArray pageTitle, photoDescription, imageURL
          put firstParagraph into mapText
       end if
       put "[[" & pageTitle & "]]" into pinText
-      fedwiki_AddMapToPageArray pageArray, mapLat, mapLong, mapText, locationAccuracy, pinText, pTileType
+      pageArray_AddMap pageArray, mapLat, mapLong, mapText, locationAccuracy, pinText, pTileType
    end if
    
    put json_FromArray (pageArray) into pageJSON
@@ -468,29 +468,6 @@ end flickr_ConstructParamBits
 
 --> Deps 
 -
-function json_FromArray pArray, pForceRootType, pPretty
-   repeat for each key tKey in pArray
-      if pArray[tKey] is an array then
-         put "}"&json_FromArray(pArray[tKey]) into pArray[tKey]
-      end if
-   end repeat
-   return(mergJSONEncode("pArray",pForceRootType,pPretty))
-end json_FromArray
-
-function json_ToArray pJSON
-   if pJSON is empty then return false
-   try -- as otherwise an error with non-json causes script to exit
-      local tArray,tKeys
-      if pJSON is empty then return empty
-      repeat for each line tKey in mergJSONDecode(pJSON,"tArray")
-         put json_ToArray(tArray[tKey]) into tArray[tKey]
-      end repeat
-      return tArray
-   catch e
-      return empty
-   end try
-end json_ToArray
-
 function sha1_HMAC someText, someKey
    /*
    This function should use the built in cypher function
@@ -527,11 +504,6 @@ function sha1_HMAC someText, someKey
    return oAuthSig
    */
 end sha1_HMAC
-
-function kwote someText, pQuoteChar
-   if pQuoteChar is empty then put quote into pQuoteChar
-   return pQuoteChar & someText & pQuoteChar
-end kwote
 
 
 --> Deps  | Why

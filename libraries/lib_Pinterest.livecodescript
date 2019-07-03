@@ -18,64 +18,45 @@ local PinterestAuthenticationToken
 
 --> Working on
 -
-command display_PinterestAuthenticatonArray
-   put user_GetArray (cPinterestModelShortFile) into authenticationArray
-   display_Array authenticationArray
-end display_PinterestAuthenticatonArray
+getprop dep_StackNames
+    return "lib_Fedwiki,lib_LCW,lib_Stack,model_Library"
+end dep_StackNames
 
 
---> Pinterest | Model
+--> Pinterest | Authentication
 -
 function pinterest_GetAuthenticationToken
-   -- cached
-   if PinterestAuthenticationToken is empty then
-      put user_GetValue ("PinterestAuthenticationToken", cPinterestModelShortFile) into PinterestAuthenticationToken
-      if PinterestAuthenticationToken is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
+   put secret_Get ("PinterestAuthenticationToken", "pinterest") into PinterestAuthenticationToken
    return PinterestAuthenticationToken
 end pinterest_GetAuthenticationToken
 
+function pinterest_GetAppSecret
+   put secret_Get ("PinterestAppSecret", "pinterest") into PinterestAppSecret
+   return PinterestAppSecret
+end pinterest_GetAppSecret
+
+function pinterest_GetAppID
+   put secret_Get ("PinterestAppID", "pinterest") into PinterestAppID
+   return PinterestAppID
+end pinterest_GetAppID
+
+
+--> Pinterest | Authentication | Set
+-
 command pinterest_SetAuthenticationToken pAppSecret
-   user_SetValue "PinterestAuthenticationToken", cPinterestModelShortFile, pAppSecret
+   secret_Set "PinterestAuthenticationToken", pAppSecret, "pinterest"
    put the result into modelDataFile
    return modelDataFile
 end pinterest_SetAuthenticationToken
 
-function pinterest_GetAppSecret
-   -- cached
-   if PinterestAppSecret is empty then
-      put user_GetValue ("PinterestAppSecret", cPinterestModelShortFile) into PinterestAppSecret
-      if PinterestAppSecret is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return PinterestAppSecret
-end pinterest_GetAppSecret
-
 command pinterest_SetAppSecret pAppSecret
-   user_SetValue "PinterestAppSecret", cPinterestModelShortFile, pAppSecret
+   secret_Set "PinterestAppSecret", pAppSecret, "pinterest"
    put the result into modelDataFile
    return modelDataFile
 end pinterest_SetAppSecret
 
-function pinterest_GetAppID
-   -- cached
-   if PinterestAppID is empty then      
-      put user_GetValue ("PinterestAppID", cPinterestModelShortFile) into PinterestAppID
-      if PinterestAppID is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return PinterestAppID
-end pinterest_GetAppID
-
 command pinterest_SetAppID pAppID
-   user_SetValue "PinterestAppID", cPinterestModelShortFile, pAppID
+   user_SetValue "PinterestAppID", pAppID, "pinterest"
    put the result into modelDataFile
    return modelDataFile
 end pinterest_SetAppID
@@ -130,11 +111,11 @@ function pinterest_ConstructPageArray photoDescription, imageURL
    put pageTitle into imageCaption
    put fedwiki_ConstructImageHtml (imageURL, imageCaption, imageLink, imageLinkTag) into imageHTML
    */
-   fedwiki_AddHtmlToPageArray pageArray, imageHTML
+   pageArray_AddHtml pageArray, imageHTML
    
    repeat for each line someLine in photoDescription
       put fedwiki_JsonEncode (someLine) into nextParagraph
-      fedwiki_AddParagraphToPageArray pageArray, nextParagraph
+      pageArray_AddText pageArray, nextParagraph
    end repeat
    
    return pageArray

@@ -6,14 +6,10 @@ type: script library
 version: 0.8
 copyright: David Bovill
 licence:  GPLv3
-deps: lib_Fedwiki, lib_REST
+deps: lib_Fedwiki, lib_REST, lib_REST
 
 /*
 A library for interfacing with https://github.com/audioBoom/api/blob/master/sections/authentication.md
-
-https://api.audioboom.com/
-Authorization URL: https://api.audioboom.com/oauth/authorize (GET)
-Access Token URL: https://api.audioboom.com/oauth/access_token (POST)
 */
 
 
@@ -23,6 +19,7 @@ constant kAudioboomApiStem = "https://api.audioboom.com/"
 constant kAuthURL = "https://api.audioboom.com/oauth/authorize"
 constant kTokenURL = "https://api.audioboom.com/oauth/access_token"
 constant kAudioboomModelShortFile = "audioboom_Authentication.array"
+constant kZoomLevel = 15
 
 local AudioboomUserName
 local AudioboomUserID
@@ -31,143 +28,14 @@ local AudioboomClientSecret
 local AudioboomAccessToken
 
 
---> Audioboom | Authenticate
--
-function audioboom_GetDefaultUserID
-   -- cached
-   if AudioboomUserID is empty then
-      put user_GetValue ("AudioboomUserID", kAudioboomModelShortFile) into AudioboomUserID
-      if AudioboomUserID is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return AudioboomUserID
-end audioboom_GetDefaultUserID
-
-command audioboom_SetDefaultUserID pUserID
-   user_SetValue "AudioboomUserID", kAudioboomModelShortFile, pUserID
-   put the result into modelDataFile
-   return modelDataFile
-end audioboom_SetDefaultUserID
-
-function audioboom_GetDefaultUserName
-   -- cached
-   if AudioboomUserName is empty then
-      put user_GetValue ("AudioboomUserName", kAudioboomModelShortFile) into AudioboomUserName
-      if AudioboomUserName is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return AudioboomUserName
-end audioboom_GetDefaultUserName
-
-command audioboom_SetDefaultUserName pUserName
-   user_SetValue "AudioboomUserName", kAudioboomModelShortFile, pUserName
-   put the result into modelDataFile
-   return modelDataFile
-end audioboom_SetDefaultUserName
-
-function audioboom_GetClientID
-   -- cached
-   if AudioboomClientID is empty then
-      put user_GetValue ("AudioboomClientID", kAudioboomModelShortFile) into AudioboomClientID
-      if AudioboomClientID is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return AudioboomClientID
-end audioboom_GetClientID
-
-command audioboom_SetClientID pClientID
-   user_SetValue "AudioboomClientID", kAudioboomModelShortFile, pClientID
-   put the result into modelDataFile
-   return modelDataFile
-end audioboom_SetClientID
-
-function audioboom_GetClientSecret
-   -- cached
-   if AudioboomClientSecret is empty then
-      put user_GetValue ("AudioboomClientSecret", kAudioboomModelShortFile) into AudioboomClientSecret
-      if AudioboomClientSecret is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return AudioboomClientSecret
-end audioboom_GetClientSecret
-
-command audioboom_SetClientSecret pClientSecret
-   user_SetValue "AudioboomClientSecret", kAudioboomModelShortFile, pClientSecret
-   put the result into modelDataFile
-   return modelDataFile
-end audioboom_SetClientSecret
-
-function audioboom_GetAccessToken
-   -- cached
-   if AudioboomAccessToken is empty then
-      put user_GetValue ("AudioboomAccessToken", kAudioboomModelShortFile) into AudioboomAccessToken
-      if AudioboomAccessToken is empty then -- something is broken
-         breakpoint
-         exit to top
-      end if
-   end if
-   return AudioboomAccessToken
-end audioboom_GetAccessToken
-
-command audioboom_SetAccessToken pAccessToken
-   user_SetValue "AudioboomAccessToken", kAudioboomModelShortFile, pAccessToken
-   put the result into modelDataFile
-   return modelDataFile
-end audioboom_SetAccessToken
-
-command audioboom_Authenticate pAudioboomClientID
-   if pAudioboomClientID is empty then
-      put audioboom_GetClientID() into pAudioboomClientID
-   end if
-   if pAudioboomClientSecret is empty then
-      put audioboom_GetClientSecret() into pAudioboomClientSecret
-   end if
-   
-   OAuth2 kAuthURL, kTokenURL, pAudioboomClientID, pAudioboomClientSecret, empty, 54304
-   put the result into errorResult
-   
-   breakpoint
-   if errorResult is not empty then
-      answer error "Not authorized!" 
-   else
-      put it into audioboomAuthArray
-      put errorResult
-      display_Array audioboomAuthArray   
-   end if
-end audioboom_Authenticate
-
-
 --> Working on
 -
-command audioboom_PostAudioClip
-   /*
-   You would normally perform POST /audio_clips containing :
-   
-   {
-   "audio_clip": {
-   "title": "foo",
-   "uploaded_data": <AudioFileData>,
-   "uploaded_image": <ImageFileData>
-   }
-   }
-   */
-   breakpoint
-   audioboom_RestPOST "audio_clips", someJSON
-   return the result
-end audioboom_PostAudioClip
+--- function audioboom_RequestToken
+put url "https://api.audioboom.com/oauth/request_token" into someJson
+return someJson
+end audioboom_RequestToken
 
-
---> AudioBoom | Fedwiki
--
-function audioboom_GuessClipJSON someURL
+function audioboom_ClipJsonFromUrl someURL
    put audioboom_IDExtractFromURL (someURL) into audioClipID
    if audioClipID is empty then return empty
    put audioboom_FetchClipJSON (audioClipID) into someJSON
@@ -176,20 +44,7 @@ function audioboom_GuessClipJSON someURL
    put audioboom_ConstructFedwikiPageArray (audioClipArray) into pageArray
    put json_FromArray (pageArray) into pageJSON
    return pageJSON
-end audioboom_GuessClipJSON
-
-function audioboom_IDExtractFromURL someUrl
-   -- was "audioboom_ParseUrl"
-   -- https://audioboom.com/boos/3256201-antibodies-part-1-crispr
-   url_Deconstruct someUrl, someProtocol, urlDomain, urlPath, shortName, fileExtension, uName, pWord
-   if urlDomain = audioboom.com and someProtocol = "https" and item 1 of urlPath = "boos" then
-      set the itemdelimiter to "-"
-      put item 1 of shortName into someID
-      return someID
-   else
-      return empty
-   end if
-end audioboom_IDExtractFromURL
+end audioboom_ClipJsonFromUrl
 
 function audioboom_ConstructFedwikiPageArray audioClipArray
    put audioClipArray ["title"] into clipTitle
@@ -208,23 +63,27 @@ function audioboom_ConstructFedwikiPageArray audioClipArray
    put userArray ["urls"]["image"] into userImageUrl
    put userArray ["urls"]["profile"] into profileUrl
    
-   put fedwiki_ConstructNewPageArray (clipTitle) into pageArray 
-   fedwiki_AddParagraphToPageArray pageArray, clipDescription
+   put fedwiki_ConstructNewPageArray (clipTitle, clipDescription) into pageArray 
    put fedwiki_ConstructImageDiv (imageURL) into imageHTML
-   fedwiki_AddHtmlToPageArray pageArray, imageHTML
-   fedwiki_AddAudioToPageArray pageArray, audioURL, "."
+   pageArray_AddHtml pageArray, imageHTML
+   pageArray_AddAudio pageArray, audioURL, "."
    
    put locationArray ["description"] into locationDescription
    put locationArray ["accuracy"] into locationAccuracy
    put locationArray ["latitude"] into mapLat
    put locationArray ["longitude"] into mapLong
-   put 17 into mapZoom
-   put fedwiki_ConstructOpenStreetMapDescription (locationDescription, mapZoom, mapLat, mapLong) into mapText
+   put kZoomLevel into mapZoom
    
-   fedwiki_AddMapToPageArray pageArray, mapLat, mapLong, mapText, mapZoom
-   
+   /*
+   52.207483, 0.115771 This recording was made near [[ London]],  by [[fortyfoxes]], on  Nov 20, 2015 at 11:05 AM - [https://audioboom.com/posts/3836093-raspberrypad audioboom]
+   */
    put audioboom_ConstructUserParagraph (locationDescription, userArray, clipDate, booURL) into wikiText
-   fedwiki_AddParagraphToPageArray pageArray, wikiText
+   put mapLat & comma && mapLong && wikiText into mapText
+   -- put fedwiki_ConstructOpenStreetMapDescription (locationDescription, mapZoom, mapLat, mapLong) into mapText
+   
+   pageArray_AddMap pageArray, mapLat, mapLong, mapText, mapZoom
+   pageArray_AddText pageArray, wikiText
+   pageArray_CleanJournal pageArray
    return pageArray
 end audioboom_ConstructFedwikiPageArray
 
@@ -252,6 +111,229 @@ function audioboom_ConstructUserParagraph locationDescription, userArray, clipMi
    put  ", on" &&  funkyDate && "- [" & funkUrl & "]" after wikiText
    return wikiText
 end audioboom_ConstructUserParagraph
+
+
+--> Audioboom | REST
+-
+function audioboom_GetAccountArray
+   -- /account      
+   put audioboom_RestGET ("account") into jsonResponse
+   put json_ToArray (jsonResponse) into responseArray
+   return responseArray
+end audioboom_GetAccountArray
+
+function audioboom_RestGET apiPath   
+   put kAudioboomApiStem & apiPath into someUrl
+   put audioboom_GetAccessToken() into oAuthAccessToken
+   put jsonrpc_GET (someUrl, oauthAccessToken, 1) into returnedJSON
+   return returnedJSON
+end audioboom_RestGET
+
+command audioboom_RestPOST apiPath, jsonArray, pUseJSON
+   put kAudioboomApiStem & apiPath into restUrl
+   put audioboom_GetAccessToken() into oAuthAccessToken
+   
+   if pUseJSON is true then
+      set the httpHeaders to "Content-type: application/json" & CR & "Authorization: Bearer" && oauthAccessToken 
+      -- put CR & "Accept: application/json; version=1" after oauthAccessToken
+      
+      put json_FromArray (jsonArray) into jsonOrFormData
+   else
+      breakpoint -- not sure how to format this (not working)
+      
+      put libURLMultipartFormData (jsonOrFormData, "playlist[image_data]") into tError
+      
+      /*
+      put libURLMultipartFormData (jsonOrFormData) into tError
+      put line 1 of the keys of jsonArray into topKey
+      put jsonArray [topKey] into topArray
+      
+      repeat for each key someKey in topArray
+         put topArray [someKey] into someValue
+         put libURLMultipartFormAddPart (jsonOrFormData, someKey, someValue) into tError
+      end repeat
+      */
+   end if
+   
+   post jsonOrFormData to url restUrl
+   put it into jsonResult
+   return jsonResult
+end audioboom_RestPOST
+
+command audioboom_Authenticate pAudioboomClientID, pAudioboomClientSecret
+   if pAudioboomClientID is empty then
+      put audioboom_GetClientID() into pAudioboomClientID
+   end if
+   if pAudioboomClientSecret is empty then
+      put audioboom_GetClientSecret() into pAudioboomClientSecret
+   end if
+   
+   OAuth2 kAuthURL, kTokenURL, pAudioboomClientID, pAudioboomClientSecret, empty, 54304
+   put the result into errorResult
+   put it into audioboomAuthArray
+   switch
+      case errorResult is not empty
+         return "Not authorized!" && errorResult
+      case audioboomAuthArray is not an array
+         return "Result is empty! Refresh maybe" 
+         break
+      default
+         return audioboomAuthArray   
+   end switch
+end audioboom_Authenticate
+
+on audioboom_RefreshAccessToken
+   put audioboom_GetClientID() into pAudioboomClientID
+   put audioboom_GetClientSecret() into pAudioboomClientSecret
+   put audioboom_GetAccessToken() into accessToken
+   
+   OAuth2Refresh kTokenURL, pAudioboomClientID, pAudioboomClientSecret, accessToken, 59004
+   if the result is empty then
+      put it into audioboomAuthArray
+   else
+      return "Not authorized" for error
+   end if
+   
+   put audioboomAuthArray ["access_token"] into newAccessToken
+   audioboom_SetAccessToken newAccessToken
+   return audioboomAuthArray
+end audioboom_RefreshAccessToken
+
+
+--> Audioboom | Authenticate
+-
+function audioboom_GetSecret secretKey
+   if the environment = "server" then
+      put empty into someSecret
+   else
+      put user_GetValue (secretKey, kAudioboomModelShortFile) into someSecret
+   end if
+   if AudioboomAccessToken is empty then
+      -- breakpoint -- something is broken
+   end if
+   return someSecret
+end audioboom_GetSecret
+
+command audioboom_SetSecret secretKey, secretValue
+   user_SetValue secretKey, kAudioboomModelShortFile, secretValue
+   put the result into modelDataFile
+   return modelDataFile
+end audioboom_SetSecret
+
+function audioboom_GetAccessToken
+   -- cached
+   if AudioboomAccessToken is empty then
+      put audioboom_GetSecret ("AudioboomAccessToken") into AudioboomAccessToken
+   end if
+   return AudioboomAccessToken
+end audioboom_GetAccessToken
+
+command audioboom_SetAccessToken pAccessToken
+   audioboom_SetSecret "AudioboomAccessToken", pAccessToken
+   put the result into modelDataFile
+   put pAccessToken into AudioboomAccessToken
+   return modelDataFile
+end audioboom_SetAccessToken
+
+function audioboom_GetClientID
+   -- cached
+   if AudioboomClientID is empty then
+      put audioboom_GetSecret ("AudioboomClientID") into AudioboomClientID
+   end if
+   return AudioboomClientID
+end audioboom_GetClientID
+
+command audioboom_SetClientID pClientID
+   audioboom_SetSecret "AudioboomClientID", pClientID
+   put the result into modelDataFile
+   put pClientID into AudioboomClientID
+   return modelDataFile
+end audioboom_SetClientID
+
+function audioboom_GetClientSecret
+   -- cached
+   if AudioboomClientSecret is empty then
+      put audioboom_GetSecret ("AudioboomClientSecret") into AudioboomClientSecret
+   end if
+   return AudioboomClientSecret
+end audioboom_GetClientSecret
+
+command audioboom_SetClientSecret pClientSecret
+   audioboom_SetSecret "AudioboomClientSecret", pClientSecret
+   put the result into modelDataFile
+   put pClientSecret into AudioboomClientSecret
+   return modelDataFile
+end audioboom_SetClientSecret
+
+function audioboom_GetDefaultUserID
+   -- cached
+   if AudioboomUserID is empty then
+      put audioboom_GetSecret ("AudioboomUserID") into AudioboomUserID
+   end if
+   return AudioboomUserID
+end audioboom_GetDefaultUserID
+
+command audioboom_SetDefaultUserID pUserID
+   audioboom_SetSecret "AudioboomUserID", pUserID
+   put the result into modelDataFile
+   put pUserID into AudioboomUserID
+   return modelDataFile
+end audioboom_SetDefaultUserID
+
+function audioboom_GetDefaultUserName
+   -- cached
+   if AudioboomUserName is empty then
+      put audioboom_GetSecret ("AudioboomUserName") into AudioboomUserName
+   end if
+   return AudioboomUserName
+end audioboom_GetDefaultUserName
+
+command audioboom_SetDefaultUserName pUserName
+   audioboom_SetSecret "AudioboomUserName", pUserName
+   put the result into modelDataFile
+   put pUserName into AudioboomUserName
+   return modelDataFile
+end audioboom_SetDefaultUserName
+
+
+--> Audioboom | Post
+-
+command audioboom_PostAudioClip
+   /*
+   You would normally perform POST /audio_clips containing :
+   
+   {
+   "audio_clip": {
+   "title": "foo",
+   "uploaded_data": <AudioFileData>,
+   "uploaded_image": <ImageFileData>
+   }
+   }
+   */
+   breakpoint
+   audioboom_RestPOST "audio_clips", someJSON
+   return the result
+end audioboom_PostAudioClip
+
+function audioboom_IDExtractFromURL someUrl
+   -- was "audioboom_ParseUrl"
+   -- https://audioboom.com/boos/3256201-antibodies-part-1-crispr
+   -- put "https://audioboom.com/posts/3836093-raspberrypad" into someURL
+   
+   url_Deconstruct someUrl, someProtocol, urlDomain, urlPath, shortName, fileExtension, uName, pWord
+   if urlDomain = audioboom.com and someProtocol = "https" is false then return empty
+   
+   -- set the itemdelimiter to slash
+   switch
+      case urlPath = "boos"
+      case urlPath = "posts"
+         set the itemdelimiter to "-"
+         put item 1 of shortName into someID
+         return someID
+      default
+         return empty
+   end switch
+end audioboom_IDExtractFromURL
 
 
 --> Audioboom | Post
@@ -317,54 +399,6 @@ command audioboom_CreatePlaylist playListTitle, pSomeImage
    put jsonResult
    return jsonResult
 end audioboom_CreatePlaylist
-
-
---> Audioboom | REST
--
-function audioboom_GetAccountArray
-   -- /account      
-   put audioboom_RestGET ("account") into jsonResponse
-   put json_ToArray (jsonResponse) into responseArray
-   return responseArray
-end audioboom_GetAccountArray
-
-function audioboom_RestGET apiPath   
-   put kAudioboomApiStem & apiPath into someUrl
-   put audioboom_GetAccessToken() into oAuthAccessToken
-   put jsonrpc_GET (someUrl, oauthAccessToken, 1) into returnedJSON
-   return returnedJSON
-end audioboom_RestGET
-
-command audioboom_RestPOST apiPath, jsonArray, pUseJSON
-   put kAudioboomApiStem & apiPath into restUrl
-   put audioboom_GetAccessToken() into oAuthAccessToken
-   
-   if pUseJSON is true then
-      set the httpHeaders to "Content-type: application/json" & CR & "Authorization: Bearer" && oauthAccessToken 
-      -- put CR & "Accept: application/json; version=1" after oauthAccessToken
-      
-      put json_FromArray (jsonArray) into jsonOrFormData
-   else
-      breakpoint -- not sure how to format this (not working)
-      
-      put libURLMultipartFormData (jsonOrFormData, "playlist[image_data]") into tError
-      
-      /*
-      put libURLMultipartFormData (jsonOrFormData) into tError
-      put line 1 of the keys of jsonArray into topKey
-      put jsonArray [topKey] into topArray
-      
-      repeat for each key someKey in topArray
-         put topArray [someKey] into someValue
-         put libURLMultipartFormAddPart (jsonOrFormData, someKey, someValue) into tError
-      end repeat
-      */
-   end if
-   
-   post jsonOrFormData to url restUrl
-   put it into jsonResult
-   return jsonResult
-end audioboom_RestPOST
 
 
 --> Audioboom | Clips
@@ -478,9 +512,3 @@ end audioboom_ConstructUserClipDateArray
 
 --> Private
 -
---- function audioboom_RequestToken
-put url "https://api.audioboom.com/oauth/request_token" into someJson
-return someJson
-end audioboom_RequestToken
-
-

@@ -11,7 +11,6 @@ This is the original XML based version of the flickr library.
 Currently going through it and replacing it with simplified json based calls and parsing routines.
 */
 
-
 --> Flickr | Upload
 -
 command flickr_XmlUploadPhoto somePhoto, photoTitle, description, tags, isPublic, isFriend, isFamily
@@ -741,13 +740,42 @@ private function keyword_ConstructDefSection reducedSkipArray, tagArray
    return defSection
 end keyword_ConstructDefSection
 
-private function googleEarth_AccuracyToAltitude geoAccuracy
-   -- ie from Yahoo
-   switch geoAccuracy
-      case ""
-         
-         break
-      default
-         return 2000
-   end switch
-end googleEarth_AccuracyToAltitude
+--> LinkArray | Construct | ID | Old
+-
+-- The scripts in this section are only used by 
+
+private command linkArray_ConstructIdArray linkArray, @allKeys, @idArray, @backIdArray, @nodeIDs
+   -- only used by "keyword_ConstructDefSection"
+   -- see "linkArray_IdConstruct" for new version
+   repeat for each key someKey in linkArray
+      line_Add someKey, allKeys
+      linkArray_ConstructSimpleKey someKey, idArray, backIdArray, true
+      put linkArray [someKey] into someLinks
+      line_Add someLinks, allKeys
+      repeat for each line someLink in someLinks
+         linkArray_ConstructSimpleKey someLink, idArray, backIdArray, true
+      end repeat
+   end repeat
+   put keys(idArray) into nodeIDs
+   sort numeric nodeIDs
+   sort allKeys
+   return nodeIDs
+end linkArray_ConstructIdArray
+
+private command linkArray_ConstructSimpleKey someKey, @idArray, @backIdArray, pNumberOnly
+   -- see "array_ConstructSimpleKeys"
+   -- only used by "linkArray_ConstructIdArray"
+   put backIdArray [someKey] into simpleID
+   if simpleID is not empty then return empty -- already indexed
+   
+   -- work out new incremental ID and add to idArray and keyArray
+   put the number of lines of keys(idArray) + 1 into keyNumber
+   if pNumberOnly is true then
+      put keyNumber into simpleID
+   else
+      put "n" & keyNumber into simpleID
+   end if
+   put simpleID into backIdArray [someKey]
+   put someKey into idArray [simpleID]
+   return simpleID
+end linkArray_ConstructSimpleKey
