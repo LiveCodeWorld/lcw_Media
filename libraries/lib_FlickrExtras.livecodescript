@@ -44,11 +44,11 @@ function flickr_ParseContactXml someXml, @someArray
       end repeat
       delete last char of userNames
       put userNames into someArray ["Username Index"]
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return userNames
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParseContactXml
@@ -108,11 +108,11 @@ function flickr_FetchUserUrl userID
       put rootNode & "/user" into someNode
       put revXMLAttribute(treeID, someNode, "nsid") into someID
       put revXMLAttribute(treeID, someNode, "url") into someUrl
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return someUrl
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_FetchUserUrl
@@ -407,7 +407,7 @@ function flickr_ParsePhotoXml photoXML, @photoTableArray
    delete last char of photoIDs
    put photoIDs into photoTableArray ["PhotoID Index"]
    
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
    return indexHtml
 end flickr_ParsePhotoXml
 
@@ -512,11 +512,11 @@ function flickr_ConstructPhotoXmlDataArray someXml
       put indexHtml into photoTableArray ["data"]["indexHtml"]
       -- put photoIDs into photoTableArray ["data"]["photoIDs"]
       
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return photoTableArray
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ConstructPhotoXmlDataArray
@@ -567,11 +567,11 @@ function flickr_ParseGroupXml someXml, @photoGroupArray
       end repeat
       delete last char of groupTitles
       put groupTitles into photoGroupArray ["Title Index"]
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return groupTitles
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParseGroupXml
@@ -687,11 +687,11 @@ function flickr_ParsePhotoSetXml photoSetXml, @photoTableArray
       delete last char of photoIDs
       put photoIDs into photoTableArray ["PhotoID Index"]
       
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return indexHtml
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParsePhotoSetXml
@@ -730,11 +730,11 @@ function flickr_ParsePhotoSetListXml someXml, @photoSetArray
       end repeat
       delete last char of photoSetTitles
       put photoSetTitles into photoSetArray ["Title Index"]
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return photoSetTitles
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParsePhotoSetListXml

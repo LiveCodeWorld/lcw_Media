@@ -221,7 +221,7 @@ command flickr_ConvertThumbFile photoID, pFolder
          put flickr_ConstructImageFile (photoID, "thumbnail", pFolder, "jpg") into thumbJPG
          if there is a file thumbJPG then
             put flickr_ConstructImageFile (photoID, "thumbnail", pFolder, "png") into thumbPNG
-            file_ConvertImageFormat thumbJPG, thumbPNG, "png" -- just using SIPS on OSX for now
+            image_ConvertFormat thumbJPG, thumbPNG, "png" -- just using SIPS on OSX for now
             -- opn_Notify the result
             -- display_Lines (photoID & CR & thumbPNG), "flickr_ConvertThumbFile"
          else

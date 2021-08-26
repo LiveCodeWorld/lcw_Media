@@ -270,8 +270,10 @@ end flickr_DeconstructAuthCallbackConfirmed
 
 --> Flickr | Request Token
 -
-function flickr_FetchRequestToken callBackUrl
-   put flickr_ConstructRequestTokenParamArray (callBackUrl) into paramArray
+function flickr_FetchRequestToken pCallBackUrl
+   if pCallBackUrl is empty then put "http://127.0.0.1:54303/" into pCallBackUrl
+   --
+   put flickr_ConstructRequestTokenParamArray (pCallBackUrl) into paramArray
    put "https://www.flickr.com/services/oauth/request_token" into someURL
    flickr_ConstructParamBits "GET", someUrl, paramArray, urlParamBit, baseString
    

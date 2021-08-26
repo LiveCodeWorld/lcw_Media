@@ -16,6 +16,138 @@ Work in progress.
 
 --> Working on
 -
+
+--> Podcast
+-
+/*
+These handlers are share by several podcast libs / sections.
+*/
+
+on mDoubleUp_Podcast displayView, podcastName
+   podcast_Launch podcastName
+end mDoubleUp_Podcast
+
+on display_CuratedPodcasts
+   put podcast_ListCurated() into pageTitles
+   --
+   display_Data pageTitles, "Curated", "Podcasts"
+   put the result into displayView
+   --
+   display_SetInteractions displayView, "Podcast", "mDoubleUp_Podcast"
+   return displayView
+end display_CuratedPodcasts
+
+command podcast_Launch podcastName
+   fedwiki_Launch "cast.pod.club", podcastName
+end podcast_Launch
+
+
+--> Podclub | Model
+-
+function podclub_FetchPocastMetadata podcastTitle
+   put fedwiki_ConstructSlug (podcastTitle) into pageSlug
+   put pageArray_Fetch ("cast.pod.club", pageSlug, true) into pageArray
+   put pageArray ["story"][1]["text"] into firstPara
+   --
+   delete line 1 of firstPara
+   put word 1 to -1 of firstPara into metaLines
+   set the itemdelimiter to ":"
+   repeat for each line someLine in metaLines
+      -- > Feed: [http://feeds.wnyc.org/radiolab rss]
+      put item 1 of someLine into someKey
+      if word 1 of someKey = ">" then delete word 1 of someKey
+      put word 1 to -1 of someKey into someKey
+      put word 1 to -1 of item 2 to -1 of someLine into someValue
+      if someValue is empty then next repeat
+      --
+      fedwiki_DeconstructExternalLink someValue, someURL, linkWord
+      if the result is false then next repeat
+      put someURL into mData [someKey]
+   end repeat
+   --
+   -- https://www.listennotes.com/search/?q=Democracy&sort_by_date=0&scope=episode&offset=0&language=Any%20language&len_min=0&ocid=535815a492a941d79b95be6ae1c5cc9c
+   put mData ["Search"] into listenURL
+   set the itemdelimiter to "?"
+   put item -1 of listenURL into listenParamArray
+   split listenParamArray by "&" and "="
+   put listenParamArray ["ocid"] into mData ["podcastID"]
+   --
+   return mData
+end podclub_FetchPocastMetadata
+
+command fedwiki_DeconstructExternalLink someLink, @someURL, @linkWord
+   put "\[(.+)\s(.+)\]" into someReg
+   if matchText (someLink, someReg , sURL, sWord) is true then
+      put word 1 to -1 of sURL into someURL
+      put word 1 to -1 of sWord into linkWord
+      return true
+   else
+      put empty into someURL
+      put empty into linkWord
+      return false
+   end if
+end fedwiki_DeconstructExternalLink
+
+function podclub_FetchPodcastIndex
+   put pageArray_FetchItemModel ("cast.pod.club", "podcast-index", "177c38e4139ed7de") into podcastIndex
+   replace "- [[" with empty in podcastIndex
+   replace "]]" with empty in podcastIndex
+   return podcastIndex
+end podclub_FetchPodcastIndex
+
+command podclub_StorePodcastIndex podcastIndex
+   put fedwiki_MarkdownIndex (podcastIndex) into markdownIndex
+   pageArray_StoreItemModel "cast.pod.club", "podcast-index", "177c38e4139ed7de", markdownIndex
+   put the result into wikipageURL
+   return wikipageURL
+end podclub_StorePodcastIndex
+
+function pageArray_FetchItemModel wikiDomain, pageSlug, itemID
+   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
+   put pageArray_GetItemText (pageArray, itemID) into someText
+   return someText
+end pageArray_FetchItemModel
+
+command pageArray_StoreItemModel wikiDomain, pageSlug, itemID, someText
+   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
+   pageArray_SetItemText pageArray, itemID, someText
+   pageArray_Store wikiDomain, pageSlug, pageArray
+   put the result into wikipageURL
+   return wikipageURL
+end pageArray_StoreItemModel
+
+function podcast_ListCurated pLoad
+   put fedwiki_FetchSitemapArray ("cast.pod.club", pLoad) into sitemapArray
+   put fedwiki_GetSitemapTitles (sitemapArray) into pageTitles
+   --
+   line_Delete "Welcome Visitors", pageTitles
+   return pageTitles
+end podcast_ListCurated
+
+function podcast_ConstructPageArray pageTitle, audioURL, imageURL, firstPara, podcastDescription, audioDescription
+   put pageArray_Construct (pageTitle, firstPara) into pageArray
+   if imageURL is not empty then
+      put fedwiki_ConstructImageDiv (imageURL) into imageHTML
+      pageArray_AddHtml pageArray, imageHTML
+   end if
+   
+   repeat with lineNum = 2 to the number of lines of podcastDescription
+      put word 1 to -1 of line lineNum of podcastDescription into somePara
+      pageArray_AddText pageArray, somePara
+   end repeat
+   pageArray_AddAudio pageArray, audioURL, audioDescription
+   pageArray_CleanJournal pageArray
+   return pageArray
+end podcast_ConstructPageArray
+
+
+--> PlayerFM | Bookmarks
+-
+/*
+The API is not there, and getting json requires a cookie based authentication
+Also the returned json does not contain information about the bookmark timing
+*/
+
 function playerfm_ConstructPageArray playerfmArray
    put playerfmArray ["id"] into episodeID
    put playerfmArray ["title"] into pageTitle
@@ -35,326 +167,6 @@ function playerfm_ConstructPageArray playerfmArray
    return pageArray
 end playerfm_ConstructPageArray
 
-
---> Podcast
--
-/*
-These handlers are share by several podcast libs / sections.
-*/
-
-function podcast_ConstructPageArray pageTitle, audioURL, imageURL, firstPara, podcastDescription, audioDescription
-   put fedwiki_ConstructNewPageArray (pageTitle, firstPara) into pageArray
-   if imageURL is not empty then
-      put fedwiki_ConstructImageDiv (imageURL) into imageHTML
-      pageArray_AddHtml pageArray, imageHTML
-   end if
-   
-   repeat with lineNum = 2 to the number of lines of podcastDescription
-      put word 1 to -1 of line lineNum of podcastDescription into somePara
-      pageArray_AddText pageArray, somePara
-   end repeat
-   pageArray_AddAudio pageArray, audioURL, audioDescription
-   pageArray_CleanJournal pageArray
-   return pageArray
-end podcast_ConstructPageArray
-
-
---> ListenNotes | Fedwiki | Episode
--
-function listenNotes_ConstructEpisodePageArray episodeID, pEpisodeURL
-   put listenNotes_FetchEpisodeInfo (episodeID) into episodeJson
-   put json_ToArray (episodeJson) into episodeArray
-   --
-   put episodeArray ["description"] into episodeDescription
-   put episodeArray ["listennotes_url"] into listenURL
-   put episodeArray ["title"] into episodeTitle
-   put episodeArray ["audio"] into audioURL
-   put episodeArray ["image"] into episodeImage
-   -- put episodeArray ["thumbnail"] into episodeThumb
-   -- put episodeArray ["audio_length"] into audioLength
-   -- put episodeArray ["id"] into checkID
-   if pEpisodeURL is empty then
-      put listenURL into episodeURL
-   else
-      put pEpisodeURL into episodeURL
-   end if
-   
-   -- construct basic page
-   fedwiki_AddExternalLink episodeDescription, episodeURL
-   put fedwiki_CreateMarkdownPageArray (episodeTitle, episodeDescription) into pageArray
-   
-   -- add audio item
-   put episodeTitle & "." && episodeDescription into audioDescription
-   fedwiki_AddExternalLink pageDescription, listenURL
-   pageArray_AddAudio pageArray, audioUrl, audioDescription
-   
-   -- add episode image
-   fedwiki_AddImageToPageArray pageArray, episodeImage, episodeTitle, episodeURL
-   
-   --now add podcast section
-   listenNotes_AddPodcastMarkdown pageArray, episodeArray
-   --
-   return pageArray
-end listenNotes_ConstructEpisodePageArray
-
-command listenNotes_AddPodcastMarkdown @pageArray, episodeArray
-   put episodeArray ["podcast"]["publisher"] into publisher
-   put episodeArray ["podcast"]["title"] into podcastTitle
-   put episodeArray ["podcast"]["description"] into podcastDescription
-   put episodeArray ["podcast"]["website"] into podcastURL
-   
-   --now add podcast section
-   pageArray_SetTitle pageArray, podcastTitle
-   pageArray_AddMarkdown pageArray, podcastDescription
-   
-   --now add podcast image
-   put episodeArray ["podcast"]["image"] into imageURL
-   put episodeArray ["podcast"]["thumbnail"] into thumbURL
-   --
-   put "[[" & podcastTitle & "]] by" && publisher into podcastCaption
-   --
-   fedwiki_AddImageToPageArray pageArray, imageURL, podcastCaption, podcastURL
-   return podcastMarkdown
-end listenNotes_AddPodcastMarkdown
-
-
---> ListenNotes | Fedwiki
--
-function listenNotes_ScrapeEpisodeID droppedURL
-   -- https://www.listennotes.com/embedded/e/057a4b22462e4d48ad37516bb8c2cd08/
-   -- meta - name="twitter:player" content="https://www.listennotes.com/embedded/e/057a4b22462e4d48ad37516bb8c2cd08/"
-   -- div id episode-play-button-toolbar
-   
-   put scrape_FetchTwitterMeta ("player", droppedURL) into listenURL
-   set the itemdelimiter to slash
-   put item 6 of listenURL into episodeID
-   return episodeID
-end listenNotes_ScrapeEpisodeID
-
-function listeNotes_SearchAndConstructPageArray searchTerm
-   put listenNotes_FindEpisode (searchTerm) into someJSON
-   put json_ToArray (someJSON) into listenNotesEpisodeArray
-   -- display_Array listenNotesEpisodeArray, "listenNotes_FindEpisode()"
-   
-   put listenNotesEpisodeArray ["results"] into resultArray
-   put listenNotesEpisodeArray ["next_offset"] into nextOffsetNum
-   put listenNotesEpisodeArray ["took"] into searchTime
-   put listenNotesEpisodeArray ["total"] into totalResults
-   -- put item 2 of the extents of resultArray into extentsNum
-   put listenNotesEpisodeArray ["count"] into extentsNum
-   --
-   put listenNotes_ConstructPageArrayTop ("Podcast search results", searchTerm, nextOffsetNum, totalResults, searchTime, extentsNum) into pageArray
-   --
-   repeat with itemNum = 1 to extentsNum
-      put resultArray [itemNum] into itemArray
-      put itemArray ["id"] into episodeID
-      --
-      put listenNotes_FetchEpisodeInfo (episodeID) into episodeJson
-      put json_ToArray (episodeJson) into episodeArray
-      --
-      put itemArray ["description_original"] into episodeDescription
-      put episodeArray ["id"] into checkID
-      --
-      put episodeArray ["title"] into episodeTitle
-      put episodeArray ["thumbnail"] into episodeThumb
-      put episodeArray ["image"] into episodeImage
-      --
-      put episodeArray ["audio"] into audioURL
-      put episodeArray ["audio_length"] into audioLength
-      put episodeArray ["description"] into episodeHTML
-      --
-      -- display_Array episodeArray, "listenNotes_FetchEpisodeInfo()"
-      
-      listenNotes_AddAudio pageArray, episodeTitle, episodeDescription, audioURL
-   end repeat
-   pageArray_CleanJournal pageArray
-   --
-   -- display_Array pageArray, "ListenNotes PageArray"
-   return pageArray
-end listeNotes_SearchAndConstructPageArray
-
-private function listenNotes_ConstructPageArrayTop pageTitle, searchTerm, nextOffsetNum, totalResults, searchTime, extentsNum
-   /*
-   Not quite sure what maxNum is. = totalResults - nextOffsetNum ?
-   */
-   put extentsNum && "results" into foldText
-   
-   switch -- different headers depending on pagination state
-      case totalResults = 0
-         put pageArray_Construct ("No result found.", "Search for something a bit more interesting...") into pageArray
-         return pageArray
-      case nextStartIndex is empty
-         -- no more found after this. Provide some other options?
-         put merge ("Found in [[totalResults]] results ([[searchTime]] seconds)<p>") into someHTML
-         break
-      default
-         -- there are more to paginate
-         put listenNotes_ConstructSimpleHeader (searchTerm, nextOffsetNum, totalResults, searchTime) into someHTML
-   end switch
-   --
-   put pageTitle into pageArray ["title"]
-   pageArray_AddHtml pageArray, someHTML
-   put pageArray_ConstructJournal (pageTitle) into pageArray ["journal"] 
-   --
-   pageArray_AddPagefold pageArray, foldText
-   return pageArray
-end listenNotes_ConstructPageArrayTop
-
-private function listenNotes_ConstructSimpleHeader searchTerm, nextOffsetNum, totalResults, searchTime
-   put urlencode (searchTerm) into searchTerm
-   --
-   put "<form action='https://rest.livecode.world/bbc/listenNotes'>" into someForm
-   put CR & merge ("Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;") after someForm
-   --
-   put CR & merge ("<input name='search_Term' value='[[searchTerm]]'  type='hidden'>") after someForm
-   put CR & merge ("<input name='search_Offset' value='[[nextOffsetNum]]' type='hidden'>") after someForm
-   --
-   put CR & "<button type='submit'>More</button>" after someForm
-   put CR & "</form>" after someForm
-   return someForm
-end listenNotes_ConstructSimpleHeader
-
-
---> ListenNotes | API
--
-/*
-https://market.mashape.com/listennotes/listennotes#
-*/
-function listenNotes_FetchEpisodeRecommendations episodeID
-   -- curl --get --include 'https://listennotes.p.mashape.com/api/v1/episodes/deecd6ee486f4f47abe61998efc2c0c2/recommendations' \
-   put "episodes/" & episodeID & "/recommendations" into apiPath
-   put listenNotes_RestGet (apiPath) into someJSON
-   return someJSON
-end listenNotes_FetchEpisodeRecommendations
-
-function listenNotes_FetchPodcastRecommendations podcastID
-   -- curl --get --include 'https://listennotes.p.mashape.com/api/v1/podcasts/25212ac3c53240a880dd5032e547047b/recommendations' \
-   put "podcasts/" & podcastID & "/recommendations" into apiPath
-   put listenNotes_RestGet (apiPath) into someJSON
-   return someJSON
-end listenNotes_FetchPodcastRecommendations
-
-function listenNotes_FetchPodcastEpisodes podcastID
-   /*
-   put listenNotes_FetchPodcastEpisodes ("9d6939745ed34e3aab0eb78a408ab40d")
-   -- id for a specific podcast. You can get id from search api's response.
-   curl --get --include 'https://listennotes.p.mashape.com/api/v1/podcasts/9d6939745ed34e3aab0eb78a408ab40d' \
-   */
-   put "podcasts/" & podcastID into apiPath
-   put listenNotes_RestGet (apiPath) into someJSON
-   return someJSON
-end listenNotes_FetchPodcastEpisodes
-
-function listenNotes_FetchEpisodeInfo episodeID
-   -- curl --get --include 'https://listennotes.p.mashape.com/api/v1/episodes/7fbabe370daf4e34a225bce232764f96'
-   --
-   put "episodes/" & episodeID into apiPath
-   put listenNotes_RestGet (apiPath) into someJSON
-   return someJSON
-end listenNotes_FetchEpisodeInfo
-
-function listenNotes_FindEpisode searchTerm, pExact
-   /*
-   curl --get --include 'https://listennotes.p.mashape.com/api/v1/search?q=%22A+young+woman+at+a+bar+is+slapped+on+the+butt%22'
-   curl --get --include 'https://listennotes.p.rapidapi.com/api/v1/search
-   ?sort_by_date=0
-   &type=episode
-   &offset=0
-   &only_in=title
-   &language=English
-   &ocid=36f02b0c82994118b9f226867d755937
-   &q=%22A+Short+History+Of+Story%22' \
-         -H 'X-RapidAPI-Key: PBcK3YtG6hMBoA2BjGFiPi7GnxjZFuzR'
-   */
-   
-   if pExact is true then
-      put urlencode (searchTerm) into searchTerm
-      put kwote (searchTerm, "%22") into searchTerm
-      put searchTerm into paramArray ["q"]
-   else
-      put urlencode (searchTerm) into paramArray ["q"]
-   end if
-   --
-   -- put 0 into paramArray ["offset"]
-   -- put "episode" into paramArray ["type"] -- What to search: "episode" (default) or "podcast"?
-   --
-   put listenNotes_RestGet ("search", paramArray) into someJSON
-   return someJSON
-end listenNotes_FindEpisode
-
-function listenNotes_FindPodcast podcastTitle
-   /*
-   -- put "The+Good+Fight" into paramArray ["q"]
-   only_in
-   Search only in specific fields. Allowed values: title, description, author, audio. If not specified, then search every fields
-   */
-   
-   put urlencode (podcastTitle) into paramArray ["q"]
-   --
-   put 0 into paramArray ["offset"]
-   put "title" into paramArray ["only_in"]
-   put "podcast" into paramArray ["type"]
-   --
-   put listenNotes_RestGet ("search", paramArray) into someJSON
-   return someJSON
-end listenNotes_FindPodcast
-
-
---> ListenNotes | Auth
--
-function listenNotes_RestGet apiPath, paramArray
-   put "https://listennotes.p.rapidapi.com/api/v1/" & apiPath into restURL
-   -- put "https://listennotes.p.mashape.com/api/v1/" & apiPath into restURL
-   --
-   if paramArray is an array then
-      combine paramArray using "&" and "="
-      put "?" & paramArray after restURL
-   end if
-   --
-   /*
-   put listenNotes_GetMashapeKey() into mashapeKey
-   put "X-Mashape-Key:" && mashapeKey into newHeaders
-   */
-   put listenNotes_GetRapidApiKey() into rapidApiKey
-   put "X-RapidAPI-Key:" && rapidApiKey into newHeaders
-   --
-   put CR & "Accept: application/json" after newHeaders
-   set the httpheaders to newHeaders
-   --
-   put url restURL into resultJSON
-   return resultJSON
-end listenNotes_RestGet
-
-function listenNotes_GetRapidApiKey
-   put secret_Get ("rapidApiKey", "rapidApi") into oAuthToken
-   return oAuthToken
-end listenNotes_GetRapidApiKey
-
-command listenNotes_SetRapidApiKey oAuthToken
-   secret_Set "rapidApiKey", oAuthToken, "rapidApi"
-   put the result into modelDataFile
-   return modelDataFile
-end listenNotes_SetRapidApiKey
-
-function listenNotes_GetMashapeKey
-   put secret_Get ("listenNotes_MashapeKey", "listenNotes") into oAuthToken
-   return oAuthToken
-end listenNotes_GetMashapeKey
-
-command listenNotes_SetMashapeKey oAuthToken
-   secret_Set "listenNotes_MashapeKey", oAuthToken, "listenNotes"
-   put the result into modelDataFile
-   return modelDataFile
-end listenNotes_SetMashapeKey
-
-
---> PlayerFM | Bookmarks
--
-/*
-The API is not there, and getting json requires a cookie based authentication
-Also the returned json does not contain information about the bookmark timing
-*/
-
 function playerfm_FetchBookmarkPageArray pUserName
    put playerfm_FetchBookmarkJson (pUserName) into someJSON
    put json_ToArray (someJSON) into bookmarkArray
@@ -362,10 +174,6 @@ function playerfm_FetchBookmarkPageArray pUserName
    
    return pageArray
 end playerfm_FetchBookmarkPageArray
-
-function playerfm_ConstructBookmarkPageArray
-   
-end playerfm_ConstructBookmarkPageArray
 
 function playerfm_FetchBookmarkJson pUserName
    /*
@@ -380,7 +188,7 @@ function playerfm_FetchBookmarkJson pUserName
    pfm-session=BAh7CUkiD3Nlc3Npb25faWQGOgZFVEkiJWE1NjYzZTBlYTNmNGRkM2IxMGMxZjI4OTcyNDRiNWM4BjsAVEkiGXdhcmRlbi51c2VyLnVzZXIua2V5BjsAVFsHWwZpA%2F9xm0kiAAY7AFRJIh13YXJkZW4udXNlci51c2VyLnNlc3Npb24GOwBUewZJIhRsYXN0X3JlcXVlc3RfYXQGOwBUbCsHuqAsXEkiEF9jc3JmX3Rva2VuBjsARkkiMTNQL09WQ3cxQlZjWGQyeVd1dEQxQXJxdEhhVXVScDBFMkkwRkdDbHUxRXc9BjsARg%3D%3D--a151fa4a6e89a23bd87a2dfa41fc6bbd282d1efb
    */
    
-   if pUserName is empty then put "fortyfoxes" into pUserName
+   if pUserName is empty then put "davidbovill" into pUserName
    --
    put "https://player.fm/" & pUserName & "/bookmarks.json" into jsonURL
    put url jsonURL into bookmarkJSON
@@ -438,7 +246,7 @@ function playerfm_FetchPodcastPageArray someHtml, pURL
    put revXMLNodeContents (treeID, divNode) into podcastDescription
    replace CR with space in podcastDescription
    --
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
    
    put empty into imageURL
    set the itemdelimiter to "-"
@@ -482,7 +290,7 @@ function guardian_FetchPodcastPageArray someHtml, pURL
       put revXMLText (treeID, divNode, true) into podcastDescription
    end if
    --
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
    
    put item -1 of htmlTitle into pageTitle
    
@@ -517,7 +325,7 @@ function radiolab_FetchPodcastPageArray someHTML
    put revXMLAttribute (treeID, divNode, "data-title") into someTitle
    put revXMLAttribute (treeID, divNode, "data-download") into audioURL
    --
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
    
    put word 1 to -1 of line 1 of podcastDescription into firstPara
    delete line 1 of podcastDescription
@@ -599,11 +407,6 @@ function _UglyXmlhack treeID, rootNode
    return audioURL
 end _UglyXmlhack
 
-function _UglyListenHack podcastDescription
-   put listenNotes_FindEpisode (podcastDescription) into resultJSON
-   return empty
-end _UglyListenHack
-
 function bbc_FetchPodcastPageArray someHtml, pURL
    put _UglyHack (someHtml) into someLink
    if someLink is empty then
@@ -634,13 +437,14 @@ function bbc_FetchPodcastPageArray someHtml, pURL
    if someLink is empty then
       put _UglyXmlhack (treeID, rootNode) into audioURL
       if audioURL is empty then
-         put _UglyListenHack (podcastDescription) into audioURL
+         -- could search using listenNotes
+         put empty into audioURL
       end if
    else
       put "https:" & someLink into audioURL
    end if
    --
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
    --
    put item -1 of htmlTitle into pageTitle
    replace CR with space in podcastDescription
@@ -662,47 +466,6 @@ function bbc_FetchPodcastPageArray someHtml, pURL
    put podcast_ConstructPageArray (pageTitle, audioURL, imageURL, firstPara, podcastDescription, htmlTitle) into pageArray
    return pageArray
 end bbc_FetchPodcastPageArray
-
-
---> Private | ListenNotes
--
-private command listenNotes_AddAudio @pageArray, episodeTitle, episodeDescription, audioURL
-   -- quick hack for now
-   put word 1 to -1 of episodeDescription into episodeDescription
-   pageArray_AddAudio pageArray, audioURL, episodeDescription
-end listenNotes_AddAudio
-
-private command _ConstructPageArray pageTitle, audioURL, imageURL, firstPara, podcastDescription, audioDescription
-   put fedwiki_ConstructNewPageArray (pageTitle, firstPara) into pageArray
-   if imageURL is not empty then
-      put fedwiki_ConstructImageDiv (imageURL) into imageHTML
-      pageArray_AddHtml pageArray, imageHTML
-   end if
-   
-   repeat with lineNum = 2 to the number of lines of podcastDescription
-      put word 1 to -1 of line lineNum of podcastDescription into somePara
-      pageArray_AddText pageArray, somePara
-   end repeat
-   return pageArray
-end _ConstructPageArray
-
-private command _DeconstructEpisodeItemArray itemArray
-   -- not sure i want / need this stuff
-   -- as it is better returned with "listenNotes_FetchEpisodeInfo()"
-   
-   put itemArray ["podcast_id"] into podcastID
-   put itemArray ["podcast_title"] into podcastTitle
-   put itemArray ["podcast_listennotes_url"] into podcastListenURL
-   put itemArray ["publisher_original"] into publisherName
-   --
-   put itemArray ["title_original"] into episodeTitle
-   put itemArray ["description_original"] into episodeDescription
-   put itemArray ["listennotes_url"] into listenURL
-   put itemArray ["image"] into imageURL
-   put itemArray ["thumbnail"] into thumbnailURL
-   -- put itemArray ["genres"] into genreArray
-   -- put itemArray ["audio_length"] into prettyAudioLength
-end _DeconstructEpisodeItemArray
 
 
 --> Deps

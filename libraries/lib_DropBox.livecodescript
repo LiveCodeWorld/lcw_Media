@@ -89,7 +89,6 @@ command paper_CleanMarkdown @someMarkdown
    
    ![](https://d2mxuefqeaa7sj.cloudfront.net/s_4908364456AD72E298549EA4FB2A8ACF9037EB24CFBA90C0BBDB3E125DDD030A_1546019297504_liquid.png)
    */
-   -- put script_GetCommentAboveMe() into someMarkdown
    
    -- format external image links
    put ".*\!\[\]" into someReg
@@ -275,32 +274,6 @@ function paper_GetApiResultJSON
    put headerArray ["Dropbox-Api-Result"] into apiResultJSON
    return apiResultJSON
 end paper_GetApiResultJSON
-
-
---> Dropbox | Auth
--
-function dropbox_RestGet apiPath, paramArray
-   put "https://api.dropboxapi.com/2/" & apiPath into restURL
-   put json_FromArray (paramArray) into paramJSON
-   --
-   put dropbox_GetAuthToken() into dropBoxAuthToken
-   put "Authorization: Bearer" && dropBoxAuthToken & CR & "Content-Type: text/plain" into newHeaders
-   set the httpheaders to newHeaders
-   --
-   get url (restURL & "?arg=" & paramJSON)
-   return it
-end dropbox_RestGet
-
-function dropbox_GetAuthToken
-   put secret_Get ("dropBoxAuthToken", "dropbox") into oAuthToken
-   return oAuthToken
-end dropbox_GetAuthToken
-
-command dropbox_SetAuthToken oAuthToken
-   secret_Set "dropBoxAuthToken", oAuthToken, "dropbox"
-   put the result into modelDataFile
-   return modelDataFile
-end dropbox_SetAuthToken
 
 
 --> DropBox
@@ -514,3 +487,40 @@ function dropbox_FetchListFolder folderPath
    get dropbox_ReturnPost (someJSON, someURL)
    return it
 end dropbox_FetchListFolder
+
+
+--> Dropbox | Auth
+-
+function dropbox_RestGet apiPath, paramArray
+   put "https://api.dropboxapi.com/2/" & apiPath into restURL
+   put json_FromArray (paramArray) into paramJSON
+   --
+   put dropbox_GetAuthToken() into dropBoxAuthToken
+   put "Authorization: Bearer" && dropBoxAuthToken & CR & "Content-Type: text/plain" into newHeaders
+   set the httpheaders to newHeaders
+   --
+   get url (restURL & "?arg=" & paramJSON)
+   return it
+end dropbox_RestGet
+
+function dropbox_GetAuthToken
+   put secret_Get ("dropBoxAuthToken", "dropbox") into oAuthToken
+   return oAuthToken
+end dropbox_GetAuthToken
+
+command dropbox_SetAuthToken oAuthToken
+   secret_Set "dropBoxAuthToken", oAuthToken, "dropbox"
+   put the result into modelDataFile
+   return modelDataFile
+end dropbox_SetAuthToken
+
+
+--> Deps
+-
+function secret_Get secretName
+   -- for server use only
+   if the environment is not "server" then pass "secret_Get"
+   --
+   put rigFetchConfigItem (secretName) into someSecret
+   return someSecret
+end secret_Get

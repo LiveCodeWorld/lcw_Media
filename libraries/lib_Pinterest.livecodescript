@@ -103,7 +103,7 @@ function pinterest_ConstructPageArray photoDescription, imageURL
    put fedwiki_JsonEncode (photoDescription) into photoDescription
    put line 1 of photoDescription into firstParagraph
    delete line 1 of photoDescription
-   put fedwiki_ConstructNewPageArray (pageTitle, firstParagraph) into pageArray
+   put pageArray_Construct (pageTitle, firstParagraph) into pageArray
    
    put fedwiki_ConstructImageDiv (imageURL) into imageHTML
    /*
@@ -166,6 +166,17 @@ function pinterest_FetchUserInfo
    put url someURL into someJson
    return someJson
 end pinterest_FetchUserInfo
+
+
+--> Deps
+-
+function secret_Get secretName
+   -- for server use only
+   if the environment is not "server" then pass "secret_Get"
+   --
+   put rigFetchConfigItem (secretName) into someSecret
+   return someSecret
+end secret_Get
 
 
 --> Private

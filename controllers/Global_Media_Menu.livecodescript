@@ -1,10 +1,44 @@
-﻿script "Global_Media_Menu"
+﻿script "Global | Media | Menu"
 --> MetaData
 -
 license: GPLv3
-name: Global_Media_Menu
+name: Global | Media | Menu
 type: controller
 version: 0.1
+
+
+--> Menu | Init
+-
+getprop audioboomDocs_Params
+   return "Audioboom API,Audioboom Authentication,Notes"
+end audioboomDocs_Params
+
+getprop disabled_TestLoadData
+   put ipfs_GetMultiHash ("IPFS video Player") = "QmdbejVfgCQSEwhutDovDAv2gfKhGrXZTdrmBp179Dn3kK" into foundHash
+   if foundHash is true then
+      return true
+   else
+      return false
+   end if
+end disabled_TestLoadData
+   
+getprop disabled_StartIpfs
+   get the openProcesses
+   if it contains "ipfs daemon" then
+      return true
+   else
+      return false
+   end if
+end disabled_StartIpfs
+
+getprop disabled_StopIpfs
+   get the openProcesses
+   if it contains "ipfs daemon" then
+      return false
+   else
+      return true
+   end if
+end disabled_StopIpfs
 
 
 --> Global | Media | Menu
@@ -69,36 +103,3 @@ on menu_AudioboomDocs mTarget, whichDoc
          break
    end switch
 end menu_AudioboomDocs
-
-
---> Global | Media | Menu | Props
--
-
---> Global | Media | Menu | Disabled
--
-getprop disabled_TestLoadData
-   put ipfs_GetMultiHash ("IPFS video Player") = "QmdbejVfgCQSEwhutDovDAv2gfKhGrXZTdrmBp179Dn3kK" into foundHash
-   if foundHash is true then
-      return true
-   else
-      return false
-   end if
-end disabled_TestLoadData
-   
-getprop disabled_StartIpfs
-   get the openProcesses
-   if it contains "ipfs daemon" then
-      return true
-   else
-      return false
-   end if
-end disabled_StartIpfs
-
-getprop disabled_StopIpfs
-   get the openProcesses
-   if it contains "ipfs daemon" then
-      return false
-   else
-      return true
-   end if
-end disabled_StopIpfs

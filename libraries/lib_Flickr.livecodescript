@@ -39,7 +39,7 @@ function flickr_ConstructPhotoMapPageArray pageTitle, photoDescription, imageURL
    put fedwiki_JsonEncode (photoDescription) into photoDescription
    put line 1 of photoDescription into firstParagraph
    delete line 1 of photoDescription
-   put fedwiki_ConstructNewPageArray (pageTitle, firstParagraph) into pageArray
+   put pageArray_Construct (pageTitle, firstParagraph) into pageArray
    
    put fedwiki_ConstructImageDiv (imageURL, pPageURL) into imageHTML
    /*
@@ -254,7 +254,7 @@ function flickr_ParseUploadResponse uploadResponseXml
    if treeID is not a number then return empty
    
    put revXMLNodeContents (treeID, "/rsp/photoid") into photoID
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
    return photoID
 end flickr_ParseUploadResponse
 
@@ -264,7 +264,7 @@ function flickr_ParseXmlResponse someXml
    if responseStatus is "OK" then
       return treeID
    else
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return false
    end if
 end flickr_ParseXmlResponse
@@ -446,7 +446,7 @@ private command flickr_AddDefaultsToParamArray @paramArray
    put "1.0" into paramArray ["oauth_version"]
 end flickr_AddDefaultsToParamArray
 
-private command flickr_ConstructParamBits restMethod, restEndPoint, paramArray, @urlParamBit, @baseString
+command flickr_ConstructParamBits restMethod, restEndPoint, paramArray, @urlParamBit, @baseString
    -- http://www.wackylabs.net/2011/12/oauth-and-flickr-part-2/
    
    -- encode the params

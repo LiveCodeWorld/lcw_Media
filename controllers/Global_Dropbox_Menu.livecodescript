@@ -1,8 +1,8 @@
-﻿script "Global_Dropbox_Menu"
+﻿script "Global | Dropbox | Menu"
 --> MetaData
 -
 license: GPLv3
-name: Global_Dropbox_Menu
+name: Global | Dropbox | Menu
 type: controller
 version: 0.1
 

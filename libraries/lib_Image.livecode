@@ -3,8 +3,8 @@
 -
 license: GPLv3
 name: lib_Image
-type: script library
-version: 0.1
+type: library
+version: 0.2
 
 /*
 This library is where we collect usefull handlers for manipulating images.
@@ -12,6 +12,27 @@ This library is where we collect usefull handlers for manipulating images.
 At present it is an old library full of stuff from ages ago.
 needs sorting and working out what is actually useful.
 */
+
+
+--> Working on
+-
+function image_DetectType someImage
+   -- based on function "revImageType" of the revbackScript
+   put char 1 to 100 of someImage into tHeader
+   switch tHeader
+      case charToNum (char 1 of tHeader) is 137 AND char 2 to 4 of tHeader is "PNG"
+         return "png"
+      case charToNum (char 1 of tHeader) is among the items of "255,216" and "JFIF" is in tHeader
+         return "jpeg"
+      case "GIF" is in tHeader
+         return "gif"
+         break
+      default
+         return "jpeg"
+         -- return empty
+         -- return "ppm"
+   end switch
+end image_DetectType
 
 
 --> Image
@@ -93,22 +114,6 @@ function image_TypeFromContents imageContents
         return "GIF"
     end if
 end image_TypeFromContents
-
-function image_DetectType someImage
-   -- based on function "revImageType" of the revbackScript
-   --take the numbered image and return a three character file extension for it
-   local tHeader
-   
-   put char 1 to 100 of someImage into tHeader
-   if charToNum(char 1 of tHeader) is 137 and char 2 to 4 of tHeader is "PNG" then return "png"
-   if charToNum(char 1 of tHeader) is among the items of "255,216" and "JFIF" is in tHeader then return "jpg"
-   if "GIF" is in tHeader then return "gif"
-   --PICT
-   --can't get the code to detect this right, use internal format
-   --default
-   --edited in mc or recompressed by MC (imported BMP, XWD etc.)
-   return "ppm"
-end image_DetectType
 
 function image_IsPict someImage
    -- based on function "revIsPICT" of the revbackScript
@@ -205,7 +210,6 @@ function image_FileWidth imageFile
          return empty
    end switch
 end image_FileWidth
-    
 
 command image_ExportToFile viewOrImage, pSaveToFile, pExtension
     put the image_Object of viewOrImage into imageObject
@@ -220,13 +224,13 @@ command image_ExportToFile viewOrImage, pSaveToFile, pExtension
     
     put the filename of imageObject into linkedImageFile
     if linkedImageFile is not "" then
-        file_ConvertImageFormat linkedImageFile, pSaveToFile, pExtension
+        image_ConvertFormat linkedImageFile, pSaveToFile, pExtension
         return the result is empty
     else if pExtension = "tiff" then
         -- its not a linked file and we want to export as a tiff
         put the tempname & ".png" into inputFile
         image_RevExport imageObject, inputFile, "png"
-        file_ConvertImageFormat inputFile, pSaveToFile, "tiff"
+        image_ConvertFormat inputFile, pSaveToFile, "tiff"
     else if pExtension is among the items of rev_ImageExportFormats() then
         image_RevExport imageObject, pSaveToFile, pExtension
     end if
@@ -291,7 +295,7 @@ command image_RevExport imageObject, pSaveToFile, fileExtension
    end try
 end image_RevExport
 
-on file_ConvertImageFormat inputFile, saveToFile, imageExportFormat
+command image_ConvertFormat inputFile, saveToFile, imageExportFormat
     -- just using SIPS on OSX for now
     switch 
         case the platform = "MacOS" and the systemversion > 10
@@ -300,7 +304,7 @@ on file_ConvertImageFormat inputFile, saveToFile, imageExportFormat
         default
             return false
     end switch
-end file_ConvertImageFormat
+end image_ConvertFormat
 
 
 --> Image | Snapshot

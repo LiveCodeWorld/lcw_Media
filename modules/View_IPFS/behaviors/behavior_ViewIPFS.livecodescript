@@ -9,6 +9,17 @@ version: 0.2
 
 --> Props
 -
+getprop player_FileName
+   put the filename of _playerObject() into someFile
+   return someFile
+end player_FileName
+
+setprop player_FileName fileOrUrl
+   put _playerObject() into playerObject
+   set the filename of playerObject to fileOrUrl
+   return playerObject
+end player_FileName
+
 getprop image_FileName
    put the filename of _imageObject() into someFile
    return someFile
@@ -70,6 +81,8 @@ end display_Type
 getprop view_Types
    return "browser,player,image"
 end view_Types
+
+
 --> Events
 -
 on dragEnter

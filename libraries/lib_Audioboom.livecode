@@ -17,24 +17,127 @@ A library for interfacing with https://github.com/audioBoom/api/blob/master/sect
 -
 constant kAudioboomApiStem = "https://api.audioboom.com/"
 constant kAuthURL = "https://api.audioboom.com/oauth/authorize"
-constant kTokenURL = "https://api.audioboom.com/oauth/access_token"
+-- constant kTokenURL = "https://api.audioboom.com/oauth/access_token"
+constant kTokenURL = "https://api.audioboom.com/oauth/token"
+
 constant kAudioboomModelShortFile = "audioboom_Authentication.array"
 constant kZoomLevel = 15
 
 local AudioboomUserName
 local AudioboomUserID
-local AudioboomClientID
-local AudioboomClientSecret
 local AudioboomAccessToken
+
+
+--> Audioboom | Authenticate
+-
+command audioboom_Authenticate pAudioboomClientID, pAudioboomClientSecret
+   if pAudioboomClientID is empty then put audioboom_GetClientID() into pAudioboomClientID
+   if pAudioboomClientSecret is empty then put audioboom_GetClientSecret() into pAudioboomClientSecret
+   --
+   OAuth2 kAuthURL, kTokenURL, pAudioboomClientID, pAudioboomClientSecret, empty, 54304
+   --
+   put the result into errorResult
+   put it into audioboomAuthArray
+   --
+   if errorResult is not empty then 
+      return "Not authorized"  for error
+   end if
+   
+   return audioboomAuthArray   
+end audioboom_Authenticate
+
+command audioboom_RefreshAccessToken
+   put audioboom_GetClientID() into pAudioboomClientID
+   put audioboom_GetClientSecret() into pAudioboomClientSecret
+   put audioboom_GetAccessToken() into accessToken
+   --
+   OAuth2Refresh kTokenURL, pAudioboomClientID, pAudioboomClientSecret, accessToken, 59004
+   --
+   put it into audioboomAuthArray
+   if audioboomAuthArray ["errors"] is not empty then 
+      return "Not authorized" for error
+   end if
+   
+   put audioboomAuthArray ["access_token"] into newAccessToken
+   audioboom_SetAccessToken newAccessToken
+   return audioboomAuthArray
+end audioboom_RefreshAccessToken
+
+
+--> Audioboom | Tokens
+-
+function audioboom_GetAccessToken
+   return "a1e82a7d31e5028a5d19110c"
+   
+   put secret_Get ("AudioboomAccessToken", "audioboom") into oAuthToken
+   return oAuthToken
+end audioboom_GetAccessToken
+
+command audioboom_SetAccessToken pAccessToken
+   pref_SaveValue "AudioboomAccessToken", pAccessToken -- only for local
+   put the result into modelDataFile
+   return modelDataFile
+end audioboom_SetAccessToken
+
+function audioboom_GetClientID
+   return "af82a4c763d980ab9001936e882ce2a91206007232c4fa0e334c729592658124"
+   
+   put secret_Get ("AudioboomClientID", "audioboom") into clientID
+   return clientID
+end audioboom_GetClientID
+
+function audioboom_GetClientSecret
+   return "0ae7a9a06bedb520fea885c734aa0539032df0d02a71557094b8ec86ec6616e9"
+   
+   put secret_Get ("AudioboomClientSecret", "audioboom") into clientSecret
+   return clientSecret
+end audioboom_GetClientSecret
+
+command audioboom_SetClientID clientID
+   pref_SaveValue "AudioboomClientID", clientID -- only for local
+   put the result into modelDataFile
+   return modelDataFile
+end audioboom_SetClientID
+
+command audioboom_SetClientSecret clientSecret   
+   pref_SaveValue "AudioboomClientSecret", clientSecret -- only for local
+   put the result into modelDataFile
+   return modelDataFile
+end audioboom_SetClientSecret
+
+function audioboom_GetDefaultUserID
+   -- cached
+   if AudioboomUserID is empty then
+      put audioboom_GetSecret ("AudioboomUserID") into AudioboomUserID
+   end if
+   return AudioboomUserID
+end audioboom_GetDefaultUserID
+
+command audioboom_SetDefaultUserID pUserID
+   audioboom_SetSecret "AudioboomUserID", pUserID
+   put the result into modelDataFile
+   put pUserID into AudioboomUserID
+   return modelDataFile
+end audioboom_SetDefaultUserID
+
+function audioboom_GetDefaultUserName
+   -- cached
+   if AudioboomUserName is empty then
+      put audioboom_GetSecret ("AudioboomUserName") into AudioboomUserName
+   end if
+   return AudioboomUserName
+end audioboom_GetDefaultUserName
+
+command audioboom_SetDefaultUserName pUserName
+   audioboom_SetSecret "AudioboomUserName", pUserName
+   put the result into modelDataFile
+   put pUserName into AudioboomUserName
+   return modelDataFile
+end audioboom_SetDefaultUserName
 
 
 --> Working on
 -
---- function audioboom_RequestToken
-put url "https://api.audioboom.com/oauth/request_token" into someJson
-return someJson
-end audioboom_RequestToken
-
 function audioboom_ClipJsonFromUrl someURL
    put audioboom_IDExtractFromURL (someURL) into audioClipID
    if audioClipID is empty then return empty
@@ -63,7 +166,7 @@ function audioboom_ConstructFedwikiPageArray audioClipArray
    put userArray ["urls"]["image"] into userImageUrl
    put userArray ["urls"]["profile"] into profileUrl
    
-   put fedwiki_ConstructNewPageArray (clipTitle, clipDescription) into pageArray 
+   put pageArray_Construct (clipTitle, clipDescription) into pageArray 
    put fedwiki_ConstructImageDiv (imageURL) into imageHTML
    pageArray_AddHtml pageArray, imageHTML
    pageArray_AddAudio pageArray, audioURL, "."
@@ -125,7 +228,7 @@ end audioboom_GetAccountArray
 function audioboom_RestGET apiPath   
    put kAudioboomApiStem & apiPath into someUrl
    put audioboom_GetAccessToken() into oAuthAccessToken
-   put jsonrpc_GET (someUrl, oauthAccessToken, 1) into returnedJSON
+   put jsonrpc_GET (someUrl, oauthAccessToken, empty, 1) into returnedJSON
    return returnedJSON
 end audioboom_RestGET
 
@@ -159,141 +262,6 @@ command audioboom_RestPOST apiPath, jsonArray, pUseJSON
    put it into jsonResult
    return jsonResult
 end audioboom_RestPOST
-
-command audioboom_Authenticate pAudioboomClientID, pAudioboomClientSecret
-   if pAudioboomClientID is empty then
-      put audioboom_GetClientID() into pAudioboomClientID
-   end if
-   if pAudioboomClientSecret is empty then
-      put audioboom_GetClientSecret() into pAudioboomClientSecret
-   end if
-   
-   OAuth2 kAuthURL, kTokenURL, pAudioboomClientID, pAudioboomClientSecret, empty, 54304
-   put the result into errorResult
-   put it into audioboomAuthArray
-   switch
-      case errorResult is not empty
-         return "Not authorized!" && errorResult
-      case audioboomAuthArray is not an array
-         return "Result is empty! Refresh maybe" 
-         break
-      default
-         return audioboomAuthArray   
-   end switch
-end audioboom_Authenticate
-
-on audioboom_RefreshAccessToken
-   put audioboom_GetClientID() into pAudioboomClientID
-   put audioboom_GetClientSecret() into pAudioboomClientSecret
-   put audioboom_GetAccessToken() into accessToken
-   
-   OAuth2Refresh kTokenURL, pAudioboomClientID, pAudioboomClientSecret, accessToken, 59004
-   if the result is empty then
-      put it into audioboomAuthArray
-   else
-      return "Not authorized" for error
-   end if
-   
-   put audioboomAuthArray ["access_token"] into newAccessToken
-   audioboom_SetAccessToken newAccessToken
-   return audioboomAuthArray
-end audioboom_RefreshAccessToken
-
-
---> Audioboom | Authenticate
--
-function audioboom_GetSecret secretKey
-   if the environment = "server" then
-      put empty into someSecret
-   else
-      put user_GetValue (secretKey, kAudioboomModelShortFile) into someSecret
-   end if
-   if AudioboomAccessToken is empty then
-      -- breakpoint -- something is broken
-   end if
-   return someSecret
-end audioboom_GetSecret
-
-command audioboom_SetSecret secretKey, secretValue
-   user_SetValue secretKey, kAudioboomModelShortFile, secretValue
-   put the result into modelDataFile
-   return modelDataFile
-end audioboom_SetSecret
-
-function audioboom_GetAccessToken
-   -- cached
-   if AudioboomAccessToken is empty then
-      put audioboom_GetSecret ("AudioboomAccessToken") into AudioboomAccessToken
-   end if
-   return AudioboomAccessToken
-end audioboom_GetAccessToken
-
-command audioboom_SetAccessToken pAccessToken
-   audioboom_SetSecret "AudioboomAccessToken", pAccessToken
-   put the result into modelDataFile
-   put pAccessToken into AudioboomAccessToken
-   return modelDataFile
-end audioboom_SetAccessToken
-
-function audioboom_GetClientID
-   -- cached
-   if AudioboomClientID is empty then
-      put audioboom_GetSecret ("AudioboomClientID") into AudioboomClientID
-   end if
-   return AudioboomClientID
-end audioboom_GetClientID
-
-command audioboom_SetClientID pClientID
-   audioboom_SetSecret "AudioboomClientID", pClientID
-   put the result into modelDataFile
-   put pClientID into AudioboomClientID
-   return modelDataFile
-end audioboom_SetClientID
-
-function audioboom_GetClientSecret
-   -- cached
-   if AudioboomClientSecret is empty then
-      put audioboom_GetSecret ("AudioboomClientSecret") into AudioboomClientSecret
-   end if
-   return AudioboomClientSecret
-end audioboom_GetClientSecret
-
-command audioboom_SetClientSecret pClientSecret
-   audioboom_SetSecret "AudioboomClientSecret", pClientSecret
-   put the result into modelDataFile
-   put pClientSecret into AudioboomClientSecret
-   return modelDataFile
-end audioboom_SetClientSecret
-
-function audioboom_GetDefaultUserID
-   -- cached
-   if AudioboomUserID is empty then
-      put audioboom_GetSecret ("AudioboomUserID") into AudioboomUserID
-   end if
-   return AudioboomUserID
-end audioboom_GetDefaultUserID
-
-command audioboom_SetDefaultUserID pUserID
-   audioboom_SetSecret "AudioboomUserID", pUserID
-   put the result into modelDataFile
-   put pUserID into AudioboomUserID
-   return modelDataFile
-end audioboom_SetDefaultUserID
-
-function audioboom_GetDefaultUserName
-   -- cached
-   if AudioboomUserName is empty then
-      put audioboom_GetSecret ("AudioboomUserName") into AudioboomUserName
-   end if
-   return AudioboomUserName
-end audioboom_GetDefaultUserName
-
-command audioboom_SetDefaultUserName pUserName
-   audioboom_SetSecret "AudioboomUserName", pUserName
-   put the result into modelDataFile
-   put pUserName into AudioboomUserName
-   return modelDataFile
-end audioboom_SetDefaultUserName
 
 
 --> Audioboom | Post
@@ -512,3 +480,12 @@ end audioboom_ConstructUserClipDateArray
 
 --> Private
 -
+--> Deps
+-
+function secret_Get secretName
+   -- for server use only
+   if the environment is not "server" then pass "secret_Get"
+   --
+   put rigFetchConfigItem (secretName) into someSecret
+   return someSecret
+end secret_Get

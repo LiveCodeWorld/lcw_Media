@@ -167,12 +167,12 @@ function flickr_XmlParsePhotoInfo someXml
       end repeat
       delete last char of tagNames
       put tagNames into photoRecordArray ["tags"]
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       
       return photoRecordArray
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_XmlParsePhotoInfo
@@ -230,11 +230,11 @@ function flickr_ParsePhotoSizeXml someXml, @sizeArray
          put someLabel & CR after sizeLabels
       end repeat
       delete last char of sizeLabels
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return sizeLabels
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParsePhotoSizeXml
@@ -269,7 +269,7 @@ on flickr_ParsePhotoContext contextXML, @prevPhotoID, @prevSecret, @prevTitle, @
    put revXMLAttribute(treeID, "/rsp/nextphoto", "url") into nextStreamUrl
    put revXMLAttribute(treeID, "/rsp/nextphoto", "thumb") into nextThumbUrl
    
-   revDeleteXMLTree treeID
+   revXMLDeleteTree treeID
 end flickr_ParsePhotoContext
 
 
@@ -296,7 +296,7 @@ function flickr_XmlParsePhotoGeoLocation someXML
       put locationTable into locationArray
       split locationArray using CR and tab
       
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return locationArray
    else
       put rootNode & "/err" into errorNode
@@ -306,7 +306,7 @@ function flickr_XmlParsePhotoGeoLocation someXML
       else
          set the error_Display of the target to responseStatus
       end if
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_XmlParsePhotoGeoLocation
@@ -457,11 +457,11 @@ function flickr_ParsePersonInfo someXml, @personInfoArray
       put someNode & "/photos/count" into childNode
       put revXMLNodeContents(treeID, childNode) into personInfoArray ["photoCount"]
       
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return personInfoArray ["userName"]
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParsePersonInfo
@@ -531,11 +531,11 @@ function flickr_ParsePhotoTagXml someXml, @tagArray
       end repeat
       delete last char of tagNames
       put tagNames into tagArray ["Tag Index"]
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return tagNames
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParsePhotoTagXml
@@ -566,11 +566,11 @@ function flickr_ParseRelatedTagXml someXml
          put tagName & CR after tagNames
       end repeat
       delete last char of tagNames
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return word 1 to -1 of tagNames
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParseRelatedTagXml
@@ -615,11 +615,11 @@ function flickr_ParseUserTagXml someXml
          put tagName & CR after tagNames
       end repeat
       delete last char of tagNames
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return tagNames
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParseUserTagXml
@@ -658,11 +658,11 @@ function flickr_ParseLicenseXml someXml, @licenseArray
       delete last char of someNames
       put someNames into licenseArray ["Title Index"]
       
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return someNames
    else
       set the error_Display of the target to responseStatus
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_ParseLicenseXml
@@ -690,12 +690,12 @@ function flickr_FetchMethods
    if responseStatus is "OK" then
       put rootNode & "/methods" into someNode
       put revXMLChildContents(treeID, someNode, tab, CR, false, 1) into nodeTable   
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       
       split nodeTable by column
       return nodeTable [2]
    else
-      revDeleteXMLTree treeID
+      revXMLDeleteTree treeID
       return empty
    end if
 end flickr_FetchMethods
@@ -739,6 +739,7 @@ private function keyword_ConstructDefSection reducedSkipArray, tagArray
    delete char -1 of defSection
    return defSection
 end keyword_ConstructDefSection
+
 
 --> LinkArray | Construct | ID | Old
 -
