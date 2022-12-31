@@ -26,6 +26,220 @@ constant ListenNotes_BaseRestURL = "https://listen-api.listennotes.com/api/v2/"
 
 --> Working on
 -
+function listenNotes_FindEpisode searchTerm, pPodcastID, pExact
+   put listenNotes_FetchEpisodeJSON (searchTerm, pPodcastID, pExact) into someJSON
+   put json_ToArray (someJSON) into episodeArray
+   return episodeArray
+end listenNotes_FindEpisode
+
+function listenNotes_FetchEpisodeJSON searchTerm, pPodcastID, pExact
+   put "episode" into paramArray ["type"] -- What to search: "episode" (default) or "podcast"?
+   --
+   if pExact is true then
+      put urlencode (searchTerm) into searchTerm
+      put kwote (searchTerm, "%22") into searchTerm
+      put searchTerm into paramArray ["q"]
+   else
+      put urlencode (searchTerm) into paramArray ["q"]
+   end if
+   --
+   if pPodcastID is not empty then
+      put pPodcastID into paramArray ["ocid"]
+   end if
+   put listenNotes_RestGet ("search", paramArray) into someJSON
+   return someJSON
+end listenNotes_FetchEpisodeJSON
+
+function listenNotes_RestGet apiPath, paramArray, pVersion
+   switch pVersion
+      case "v2"
+         -- v2 (witing for API key)
+         put ListenNotes_BaseRestURL into restURL
+         put listenNotes_GetApiKey() into apiKey
+         put "X-ListenAPI-Key:" && apiKey into newHeaders
+         break
+      default
+         -- v1
+         put _VersionBaseUrl() into restURL
+         put listenNotes_GetRapidApiKey() into apiKey
+         put "X-RapidAPI-Key:" && apiKey into newHeaders
+   end switch
+   
+   put apiPath after restURL
+   --
+   if paramArray is an array then
+      combine paramArray using "&" and "="
+      put "?" & paramArray after restURL
+   end if
+   --
+   put CR & "Accept: application/json" after newHeaders
+   set the httpheaders to newHeaders
+   put url restURL into utf8JSON
+   --
+   put textDecode (utf8JSON, "UTF-8") into rJSON
+   replace "\u00a0" with empty in rJSON
+   --
+   return rJSON
+end listenNotes_RestGet
+
+
+--> PageArray | ListenNotes
+-
+command pageArray_AddRssButton @pageArray, podcastRSS, pTitle, pWikiDomain, pRssLastUpdated, pDisplayStyle
+   if pTitle is empty then
+      put "Import RSS" into buttonName
+   else
+      put pTitle into buttonName
+   end if
+   --
+   put podcastRSS into hiddenKeyValueArray ["rssURL"]
+   if pTitle is not empty then put pTitle into hiddenKeyValueArray ["pageTitle"]
+   if pWikiDomain is not empty then put pWikiDomain into hiddenKeyValueArray ["wikiDomain"]
+   if pRssLastUpdated is not empty then put pRssLastUpdated into hiddenKeyValueArray ["rssLastUpdated"]
+   if pDisplayStyle is not empty then put pDisplayStyle into hiddenKeyValueArray ["displayStyle"]
+   --
+   put "https://rest.livecode.world/podcast/rss" into postURL
+   pageArray_AddButton pageArray, buttonName, postURL, hiddenKeyValueArray
+end pageArray_AddRssButton
+
+command pageArray_AddEpisodeUpdateButton @pageArray, podcastID, pPageTitle
+   put "https://rest.livecode.world/podcast/updateRecent" into postURL
+   --
+   put podcastID into hiddenKeyValueArray ["podcastID"]
+   if pPageTitle is not empty then put pPageTitle into hiddenKeyValueArray ["pageTitle"]
+   --
+   pageArray_AddButton pageArray, "Update Recent", postURL, hiddenKeyValueArray
+end pageArray_AddEpisodeUpdateButton
+
+
+--> Podcast
+-
+function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonCommand
+   if pButtonCommand is empty then put "importPodcast" into pButtonCommand
+   --
+   put "https://rest.livecode.world/podcast/" & pButtonCommand into postURL
+   --
+   if pUseLabel is true then
+      put "Import" into buttonName
+      put "[[" & podcastTitle & "]]" into pLabel
+   else
+      put podcastTitle into buttonName
+      put empty into pLabel
+   end if
+   --
+   put podcastTitle into inputKeyValueArray ["podcastTitle"]
+   put podcastID into inputKeyValueArray ["podcastID"]
+   --
+   put fedwiki_ConstructButtonForm (buttonName, postURL, inputKeyValueArray, pLabel) into someHTML
+   return someHTML
+end podcast_ConstructButton
+
+function podcast_ConstructButtonTemplate pUseLabel
+   put "https://rest.livecode.world/podcast/importPodcast" into postURL
+   --
+   put "{{podcastTitle}}" into curlyTitle
+   if pUseLabel is true then
+      put "Import" into buttonName
+      put "[[" & curlyTitle & "]]" into pLabel
+   else
+      put curlyTitle into buttonName
+      put empty into pLabel
+   end if
+   --
+   put fedwiki_ConstructButtonForm (buttonName, postURL, "podcastTitle", curlyTitle, pLabel) into someHTML
+   return someHTML
+end podcast_ConstructButtonTemplate
+
+
+--> ListenNotes | Scrape
+-
+function listenNotes_PageArrayFromScrape droppedURL
+   put listenNotes_FetchEpisodeID (droppedURL) into episodeID
+   put listenNotes_ConstructEpisodePageArray (episodeID) into pageArray
+   return pageArray
+end listenNotes_PageArrayFromScrape
+
+function listenNotes_FetchEpisodeID droppedURL
+   put url droppedURL into someHTML
+   put listenNotes_EpisodeID (someHtml) into episodeID
+   -- put listenNotes_ScrapeEpisodeID (someHtml) into episodeID
+   return episodeID
+end listenNotes_FetchEpisodeID
+
+function listenNotes_EpisodeID someHtml
+   -- put url "https://www.listennotes.com/podcasts/revolutions/725-the-parliament-of-dAFT1JL2irh/" into someHtml
+   local episodeID
+   --
+   put "data-episode-uuid='(.+)'" into sReg
+   replace "'" with quote in sReg
+   if matchText (someHtml, sReg, episodeID) is true then
+      return episodeID
+   else
+      return empty
+   end if
+   
+   -- another way to do it
+   put wordOffset ("data-episode-uuid", someHtml) into wordNum
+   if wordNum - 0 then return empty
+   put token 7 of word wordNum of someHtml into episodeID 
+   return wordNum 
+end listenNotes_EpisodeID
+
+function listenNotes_ScrapeEpisodeID someHtml
+   -- this scrape is fragile
+   -- use "listenNotes_EpisodeID()" instead
+   put listenNotes_ScrapeEpisodeAttributeArray (someHtml) into attributeArray
+   put attributeArray ["data-episode-uuid"] into episodeID
+   return episodeID
+end listenNotes_ScrapeEpisodeID
+
+function listenNotes_ScrapePodcastID droppedURL
+   /*
+   <div class="input-group ln-search-input-container">
+   <input type="hidden" name="ocid" value="535815a492a941d79b95be6ae1c5cc9c" />
+   <input type="text" name="q" class="form-control ln-search-input" placeholder="people, places, topics..." aria-label="people, places, topics..." required>
+   <div class="input-group-append">
+   <input class="btn btn-primary" type="submit" value="search" />
+   </div>
+   */
+   put url droppedURL into someHTML
+   put revXMLCreateTree (someHTML, false, true, false) into treeID
+   if treeID is not a number then return treeID
+   --
+   put revXMLRootNode (treeID) into rootNode
+   -- put revXMLMatchingNode (treeID, rootNode, "div", "class", "input-group ln-search-input-container", -1, false) into divNode
+   -- put revXMLAttributeValues (treeID, divNode, "input", "value", comma, 1) into aValues
+   -- put revXMLText (treeID , divNode , true) into divHtml
+   -- put revXMLMatchingNode (treeID, divNode, "input", "name", "ocid", -1, false) into inputNode
+   
+   put revXMLMatchingNode (treeID, rootNode, "input", "name", "ocid", -1, false) into inputNode
+   -- put revXMLText (treeID , inputNode , true) into inputHtml
+   -- put revXMLAttributes (treeID, inputNode, tab, CR) into attributeArray
+   -- split attributeArray using CR and tab
+   put revXMLAttribute (treeID, inputNode, "value") into podcastID
+   --
+   revXMLDeleteTree treeID
+   --
+   return podcastID
+end listenNotes_ScrapePodcastID
+
+function listenNotes_ScrapeEpisodeAttributeArray someHtml
+   put revXMLCreateTree (someHTML, false, true, false) into treeID
+   if treeID is not a number then return treeID
+   --
+   put revXMLRootNode (treeID) into rootNode
+   put revXMLMatchingNode (treeID, rootNode, "div", "id", "episode-play-button-toolbar", -1, false) into divNode
+   put revXMLAttributes (treeID, divNode, tab, CR) into attributeArray
+   --
+   revXMLDeleteTree treeID
+   --
+   split attributeArray using CR and tab
+   return attributeArray
+end listenNotes_ScrapeEpisodeAttributeArray
+
+
+--> ListenNotes | Fetch
+-
 function listenNotes_FetchUpdatesPodcastPageArray podcastID, pPageTitle, pWikiDoamin
    if pWikiDoamin is empty then put "cast.pod.club" into pWikiDoamin
    
@@ -51,30 +265,6 @@ function listenNotes_FetchUpdatesPodcastPageArray podcastID, pPageTitle, pWikiDo
    end if
    return pageArray
 end listenNotes_FetchUpdatesPodcastPageArray
-
-private function _ConstructEpisodeBody podcastListData
-   put podcastListData ["episodes"] into episodesData
-   repeat with itemNum = 1 to item 2 of the extents of episodesData
-      put episodesData [itemNum] into episodeArray
-      put episodeArray ["audio"] into audioURL
-      put _ConstructAudioDescription  (episodeArray) into audioDescription
-      --
-      put storyArray_ConstructAudio (audioUrl, audioDescription) into itemArray
-      put itemArray into storyArray [itemNum]
-   end repeat
-   return storyArray
-end _ConstructEpisodeBody
-
-private command _AddEpisodePodcasts @pageArray, podcastListData
-   put podcastListData ["episodes"] into episodesData
-   repeat with itemNum = 1 to item 2 of the extents of episodesData
-      put episodesData [itemNum] into episodeArray
-      --
-      put episodeArray ["audio"] into audioURL
-      put _ConstructAudioDescription  (episodeArray) into audioDescription
-      pageArray_AddAudio pageArray, audioUrl, audioDescription
-   end repeat
-end _AddEpisodePodcasts
 
 function listenNotes_GetRecentPodcastSection podcastListData
    put podcastListData ["episodes"] into episodesData
@@ -129,27 +319,6 @@ function listenNotes_ConstructPodcastPageArray podcastListData
    return pageArray
 end listenNotes_ConstructPodcastPageArray
 
-command pageArray_AddEpisodeUpdateButton @pageArray, podcastID, pPageTitle
-   put "https://rest.livecode.world/podcast/updateRecent" into postURL
-   --
-   put podcastID into hiddenKeyValueArray ["podcastID"]
-   if pPageTitle is not empty then put pPageTitle into hiddenKeyValueArray ["pageTitle"]
-   --
-   pageArray_AddButton pageArray, "Update Recent", postURL, hiddenKeyValueArray
-end pageArray_AddEpisodeUpdateButton
-
-private command _AddPodcastMetadata @pageArray, podcastListData
-   put podcastListData ["id"] into someCode ["id"]
-   put podcastListData ["title"] into someCode ["title"]
-   put podcastListData ["rss"] into someCode ["rss"]
-   put podcastListData ["website"] into someCode ["website"]
-   put podcastListData ["total_episodes"] into someCode ["total_episodes"]
-   --
-   combine someCode with CR and ": "
-   --
-   pageArray_AddCode pageArray, someCode
-end _AddPodcastMetadata
-
 
 --> ListenNotes | Find
 -
@@ -173,75 +342,6 @@ function listenNotes_FindPodcast podcastTitle, pOnlyIn, pOffset
    return resultArray
 end listenNotes_FindPodcast
 
-private command _addPodcastSearchForm @pageArray, podcastID, podcastTitle
-   pageArray_Addmarkdown pageArray, "# Search podcast"
-   pageArray_Addmarkdown pageArray,  "Use this form to search this podcast for episodes:"
-   --
-   -- put podcast_ConstructButton (podcastTitle, podcastID, false, "findEpisodeInPodcast") into formHTML
-   put "findEpisodeInPodcast" into formHandlerName
-   --
-   put "https://rest.livecode.world/podcast/" & formHandlerName into postURL
-   put podcastID into hiddenKeyValueArray ["podcastID"]
-   put podcastTitle into hiddenKeyValueArray ["podcastTitle"] -- not needed
-   --
-   put fedwiki_ConstructSearchForm ("Search podcast", postURL, "search_Term", 54, "Color blue", "right", hiddenKeyValueArray, "darkgreen") into formHTML
-   pageArray_AddHtml pageArray, formHTML
-   return true
-end _addPodcastSearchForm
-
-private function _ConstructSimpleHeader searchTerm, nextOffsetNum, totalResults, searchTime
-   put urlencode (searchTerm) into searchTerm
-   --
-   put "<form action='https://rest.livecode.world/bbc/listenNotes'>" into someForm
-   put CR & merge ("Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;") after someForm
-   --
-   put CR & merge ("<input name='search_Term' value='[[searchTerm]]'  type='hidden'>") after someForm
-   put CR & merge ("<input name='search_Offset' value='[[nextOffsetNum]]' type='hidden'>") after someForm
-   --
-   put CR & "<button type='submit'>More</button>" after someForm
-   put CR & "</form>" after someForm
-   return someForm
-end _ConstructSimpleHeader
-
-
---> Podcast
--
-function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonCommand
-   if pButtonCommand is empty then put "importPodcast" into pButtonCommand
-   --
-   put "https://rest.livecode.world/podcast/" & pButtonCommand into postURL
-   --
-   if pUseLabel is true then
-      put "Import" into buttonName
-      put "[[" & podcastTitle & "]]" into pLabel
-   else
-      put podcastTitle into buttonName
-      put empty into pLabel
-   end if
-   --
-   put podcastTitle into inputKeyValueArray ["podcastTitle"]
-   put podcastID into inputKeyValueArray ["podcastID"]
-   --
-   put fedwiki_ConstructButtonForm (buttonName, postURL, inputKeyValueArray, pLabel) into someHTML
-   return someHTML
-end podcast_ConstructButton
-
-function podcast_ConstructButtonTemplate pUseLabel
-   put "https://rest.livecode.world/podcast/importPodcast" into postURL
-   --
-   put "{{podcastTitle}}" into curlyTitle
-   if pUseLabel is true then
-      put "Import" into buttonName
-      put "[[" & curlyTitle & "]]" into pLabel
-   else
-      put curlyTitle into buttonName
-      put empty into pLabel
-   end if
-   --
-   put fedwiki_ConstructButtonForm (buttonName, postURL, "podcastTitle", curlyTitle, pLabel) into someHTML
-   return someHTML
-end podcast_ConstructButtonTemplate
-
 
 --> ListenNotes | Episode | Find
 -
@@ -250,27 +350,6 @@ function listenNotes_EpisodeSearchPageArray searchTerm
    put listenNotes_FoundPageArray (foundEpisodeData) into pageArray
    return pageArray
 end listenNotes_EpisodeSearchPageArray
-
-function listenNotes_FindEpisode searchTerm, pPodcastID, pExact
-   put "episode" into paramArray ["type"] -- What to search: "episode" (default) or "podcast"?
-   --
-   if pExact is true then
-      put urlencode (searchTerm) into searchTerm
-      put kwote (searchTerm, "%22") into searchTerm
-      put searchTerm into paramArray ["q"]
-   else
-      put urlencode (searchTerm) into paramArray ["q"]
-   end if
-   --
-   if pPodcastID is not empty then
-      put pPodcastID into paramArray ["ocid"]
-   end if
-   -- put 0 into paramArray ["offset"]
-   --
-   put listenNotes_RestGet ("search", paramArray) into someJSON
-   put json_ToArray (someJSON) into episodeArray
-   return episodeArray
-end listenNotes_FindEpisode
 
 function listenNotes_ConstructEpisodePageArray episodeID, pEpisodeURL
    try
@@ -393,108 +472,15 @@ function listenNotes_FoundPageArray foundEpisodeData
    return pageArray
 end listenNotes_FoundPageArray
 
-private command _AddMultipleParas @pageArray, episodeDescription, listenURL, pOnlyfirst
-   put "." & CR into someEnd
-   replace ". " with someEnd in episodeDescription
-   replace "! " with someEnd in episodeDescription
-   put line 1 of episodeDescription into firstPara
-   delete line 1 of episodeDescription
-   put text_ConvertHtml (word 1 to -1 of firstPara) into someMarkdown
-   fedwiki_AddExternalLink someMarkdown, listenURL
-   pageArray_AddMarkdown pageArray, someMarkdown
-   if pOnlyfirst is true then return 1
-   
-   repeat for each line someLine in episodeDescription
-      put text_ConvertHtml (word 1 to -1 of someLine) into someMarkdown
-      pageArray_AddMarkdown pageArray, someMarkdown
-   end repeat
-   return the number of lines of episodeDescription + 1
-end _AddMultipleParas
-
 
 --> ListenNotes
 -
-function listenNotes_PageArrayFromScrape droppedURL
-   put url droppedURL into someHTML
-   put listenNotes_ScrapeEpisodeAttributeArray (someHtml) into attributeArray
-   put attributeArray ["data-episode-uuid"] into episodeID
-   --
-   put listenNotes_ConstructEpisodePageArray (episodeID) into pageArray
-   return pageArray
-end listenNotes_PageArrayFromScrape
-
 function listenNotes_FetchPodcastPageArray podcastID
    put listenNotes_FetchPodcastArray (podcastID) into podcastListData
    put listenNotes_ConstructPodcastPageArray (podcastListData) into pageArray
    return pageArray
 end listenNotes_FetchPodcastPageArray
 
-
---> ListenNotes | Scrape
--
-function listenNotes_ScrapePodcastID droppedURL
-   /*
-   <div class="input-group ln-search-input-container">
-   <input type="hidden" name="ocid" value="535815a492a941d79b95be6ae1c5cc9c" />
-   <input type="text" name="q" class="form-control ln-search-input" placeholder="people, places, topics..." aria-label="people, places, topics..." required>
-   <div class="input-group-append">
-   <input class="btn btn-primary" type="submit" value="search" />
-   </div>
-   */
-   put url droppedURL into someHTML
-   put revXMLCreateTree (someHTML, false, true, false) into treeID
-   if treeID is not a number then return treeID
-   --
-   put revXMLRootNode (treeID) into rootNode
-   -- put revXMLMatchingNode (treeID, rootNode, "div", "class", "input-group ln-search-input-container", -1, false) into divNode
-   -- put revXMLAttributeValues (treeID, divNode, "input", "value", comma, 1) into aValues
-   -- put revXMLText (treeID , divNode , true) into divHtml
-   -- put revXMLMatchingNode (treeID, divNode, "input", "name", "ocid", -1, false) into inputNode
-   
-   put revXMLMatchingNode (treeID, rootNode, "input", "name", "ocid", -1, false) into inputNode
-   -- put revXMLText (treeID , inputNode , true) into inputHtml
-   -- put revXMLAttributes (treeID, inputNode, tab, CR) into attributeArray
-   -- split attributeArray using CR and tab
-   put revXMLAttribute (treeID, inputNode, "value") into podcastID
-   --
-   revXMLDeleteTree treeID
-   --
-   return podcastID
-end listenNotes_ScrapePodcastID
-
-function listenNotes_ScrapeEpisodeAttributeArray someHtml
-   put revXMLCreateTree (someHTML, false, true, false) into treeID
-   if treeID is not a number then return treeID
-   --
-   put revXMLRootNode (treeID) into rootNode
-   put revXMLMatchingNode (treeID, rootNode, "div", "id", "episode-play-button-toolbar", -1, false) into divNode
-   put revXMLAttributes (treeID, divNode, tab, CR) into attributeArray
-   --
-   revXMLDeleteTree treeID
-   --
-   split attributeArray using CR and tab
-   return attributeArray
-end listenNotes_ScrapeEpisodeAttributeArray
-
-
---> ListenNotes | Fedwiki
--
-command pageArray_AddRssButton @pageArray, podcastRSS, pTitle, pWikiDomain, pRssLastUpdated, pDisplayStyle
-   if pTitle is empty then
-      put "Import RSS" into buttonName
-   else
-      put pTitle into buttonName
-   end if
-   --
-   put podcastRSS into hiddenKeyValueArray ["rssURL"]
-   if pTitle is not empty then put pTitle into hiddenKeyValueArray ["pageTitle"]
-   if pWikiDomain is not empty then put pWikiDomain into hiddenKeyValueArray ["wikiDomain"]
-   if pRssLastUpdated is not empty then put pRssLastUpdated into hiddenKeyValueArray ["rssLastUpdated"]
-   if pDisplayStyle is not empty then put pDisplayStyle into hiddenKeyValueArray ["displayStyle"]
-   --
-   put "https://rest.livecode.world/podcast/rss" into postURL
-   pageArray_AddButton pageArray, buttonName, postURL, hiddenKeyValueArray
-end pageArray_AddRssButton
 
 
 --> ListenNotes | Episode
@@ -593,34 +579,6 @@ end listenNotes_FetchPodcastRecommendations
 
 --> ListenNotes | Rest
 -
-function listenNotes_RestGet apiPath, paramArray, pVersion
-   switch pVersion
-      case "v2"
-         -- v2 (witing for API key)
-         put ListenNotes_BaseRestURL into restURL
-         put listenNotes_GetApiKey() into apiKey
-         put "X-ListenAPI-Key:" && apiKey into newHeaders
-         break
-      default
-         -- v1
-         put _VersionBaseUrl() into restURL
-         put listenNotes_GetRapidApiKey() into apiKey
-         put "X-RapidAPI-Key:" && apiKey into newHeaders
-   end switch
-   
-   put apiPath after restURL
-   --
-   if paramArray is an array then
-      combine paramArray using "&" and "="
-      put "?" & paramArray after restURL
-   end if
-   --
-   put CR & "Accept: application/json" after newHeaders
-   set the httpheaders to newHeaders
-   put url restURL into resultJSON
-   return resultJSON
-end listenNotes_RestGet
-
 function listenNotes_GetApiKey
    put secret_Get ("listenNotesApiKey", "listenNotes") into oAuthToken
    return oAuthToken
@@ -649,6 +607,90 @@ end listenNotes_SetRapidApiKey
 
 --> Private
 -
+private command _addPodcastSearchForm @pageArray, podcastID, podcastTitle
+   pageArray_Addmarkdown pageArray, "# Search podcast"
+   pageArray_Addmarkdown pageArray,  "Use this form to search this podcast for episodes:"
+   --
+   -- put podcast_ConstructButton (podcastTitle, podcastID, false, "findEpisodeInPodcast") into formHTML
+   put "findEpisodeInPodcast" into formHandlerName
+   --
+   put "https://rest.livecode.world/podcast/" & formHandlerName into postURL
+   put podcastID into hiddenKeyValueArray ["podcastID"]
+   put podcastTitle into hiddenKeyValueArray ["podcastTitle"] -- not needed
+   --
+   put fedwiki_ConstructSearchForm ("Search podcast", postURL, "search_Term", 54, "Color blue", "right", hiddenKeyValueArray, "darkgreen") into formHTML
+   pageArray_AddHtml pageArray, formHTML
+   return true
+end _addPodcastSearchForm
+
+private function _ConstructSimpleHeader searchTerm, nextOffsetNum, totalResults, searchTime
+   put urlencode (searchTerm) into searchTerm
+   --
+   put "<form action='https://rest.livecode.world/bbc/listenNotes'>" into someForm
+   put CR & merge ("Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;") after someForm
+   --
+   put CR & merge ("<input name='search_Term' value='[[searchTerm]]'  type='hidden'>") after someForm
+   put CR & merge ("<input name='search_Offset' value='[[nextOffsetNum]]' type='hidden'>") after someForm
+   --
+   put CR & "<button type='submit'>More</button>" after someForm
+   put CR & "</form>" after someForm
+   return someForm
+end _ConstructSimpleHeader
+
+private function _ConstructEpisodeBody podcastListData
+   put podcastListData ["episodes"] into episodesData
+   repeat with itemNum = 1 to item 2 of the extents of episodesData
+      put episodesData [itemNum] into episodeArray
+      put episodeArray ["audio"] into audioURL
+      put _ConstructAudioDescription  (episodeArray) into audioDescription
+      --
+      put storyArray_ConstructAudio (audioUrl, audioDescription) into itemArray
+      put itemArray into storyArray [itemNum]
+   end repeat
+   return storyArray
+end _ConstructEpisodeBody
+
+private command _AddEpisodePodcasts @pageArray, podcastListData
+   put podcastListData ["episodes"] into episodesData
+   repeat with itemNum = 1 to item 2 of the extents of episodesData
+      put episodesData [itemNum] into episodeArray
+      --
+      put episodeArray ["audio"] into audioURL
+      put _ConstructAudioDescription  (episodeArray) into audioDescription
+      pageArray_AddAudio pageArray, audioUrl, audioDescription
+   end repeat
+end _AddEpisodePodcasts
+
+private command _AddPodcastMetadata @pageArray, podcastListData
+   put podcastListData ["id"] into someCode ["id"]
+   put podcastListData ["title"] into someCode ["title"]
+   put podcastListData ["rss"] into someCode ["rss"]
+   put podcastListData ["website"] into someCode ["website"]
+   put podcastListData ["total_episodes"] into someCode ["total_episodes"]
+   --
+   combine someCode with CR and ": "
+   --
+   pageArray_AddCode pageArray, someCode
+end _AddPodcastMetadata
+
+private command _AddMultipleParas @pageArray, episodeDescription, listenURL, pOnlyfirst
+   put "." & CR into someEnd
+   replace ". " with someEnd in episodeDescription
+   replace "! " with someEnd in episodeDescription
+   put line 1 of episodeDescription into firstPara
+   delete line 1 of episodeDescription
+   put text_ConvertHtml (word 1 to -1 of firstPara) into someMarkdown
+   fedwiki_AddExternalLink someMarkdown, listenURL
+   pageArray_AddMarkdown pageArray, someMarkdown
+   if pOnlyfirst is true then return 1
+   
+   repeat for each line someLine in episodeDescription
+      put text_ConvertHtml (word 1 to -1 of someLine) into someMarkdown
+      pageArray_AddMarkdown pageArray, someMarkdown
+   end repeat
+   return the number of lines of episodeDescription + 1
+end _AddMultipleParas
+
 private command _AddEpisodeAudioSection @pageArray, episodeArray
    local episodeTitle, episodeImage, audioUrl, audioDescription, listenURL
    

@@ -84,5 +84,5 @@ on menu_ListAtopiaAssets
 end menu_ListAtopiaAssets
  
 on menu_ExampleSvgs
-   display_HtmlSvgLinks "https://dev.w3.org/SVG/tools/svgweb/samples/svg-files/"
+   display_ExampleSvgs
 end menu_ExampleSvgs

@@ -31,6 +31,12 @@ end _SvgUrl
 
 --> Global | SVG | Tree | Line | Menu
 -
+on menu_DisplaySvg displayView
+   put _SvgUrl (displayView) into svgURL
+   --
+   display_SVG svgURL, "SVG"
+end menu_DisplaySvg
+
 on menu_DisplayXml displayView
    put _SvgUrl (displayView) into svgURL
    --
@@ -40,18 +46,3 @@ end menu_DisplayXml
 
 on _
 end _
-
-on submenu_Dev
-   return "Dev | Menu"
-end submenu_Dev
-
-
---> Dev | Menu
--
-on menu_Experiment displayView
-   put displayView
-end menu_Experiment
-
-
---> Deps
--
