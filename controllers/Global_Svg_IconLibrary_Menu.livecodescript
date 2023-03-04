@@ -1,7 +1,7 @@
 ﻿script "Global | Svg | IconLibrary | Menu"
 --> MetaData
 -
-copyright: Anonymous
+copyright: David Bovill
 license: GPLv3
 name: Global | Svg | IconLibrary | Menu
 type: controller
@@ -17,62 +17,53 @@ local LocalArray
 
 --> Menu | Props
 -
-on menu_Init tObject
-   -- called only once for top menu
-  pass menu_Init
-end menu_Init
-
 getprop menu_Target [tObject]
-   -- called once for each menu
    return the display_View of tObject
 end menu_Target
 
-getprop menu_CheckTarget [mTarget]
-   -- use to do initialisation
-   pass menu_CheckTarget
-end menu_CheckTarget
+getprop displayIconFamily_Params
+   return iconFamilies()
+end displayIconFamily_Params
 
-getprop test_Param [mTarget]
-  return "b"
-end test_Param
+getprop displayIconFamily_Param
+   return getCurrentIconFamily()
+end displayIconFamily_Param
 
-getprop test_Params [mTarget]
-   return "a,b,c"
-end test_Params
+getprop loadIconFamily_Params
+   return icon_ListLibraries()
+end loadIconFamily_Params
 
-getprop checked_TestChecked
-   return true
-end checked_TestChecked
-
-getprop disabled_Test
-  return false -- true, "delete"
-end disabled_Test
+getprop removeIconFamily_Params
+   put icon_ListLibraries() into iconFamilyNames
+   replace ".array" with empty in iconFamilyNames
+   return iconFamilyNames
+end removeIconFamily_Params
 
 
 --> Global | Svg | IconLibrary | Menu
 -
-on menu_Test displayView, abc
-   put displayView & CR & abc
-end menu_Test
+on menu_LoadIconFamily displayView, iFamilyName
+   icon_LoadFamily iFamilyName
+end menu_LoadIconFamily
 
-on menu_TestChecked
-  put menu_GetChecked (the params)
-end menu_TestChecked
+on menu_RemoveIconFamily displayView, iFamilyName
+   icon_RemoveFamily iFamilyName
+end menu_RemoveIconFamily
 
-on _
+private on _
 end _
 
-on submenu_Dev
-   return "Dev | Menu"
-end submenu_Dev
+on menu_ExportIconFamily displayView
+   put the displayed_Title of displayView into iFamilyName
+   --
+   icon_SetLibrary iFamilyName
+end menu_ExportIconFamily
 
+on insert_Menu
+   return "Global | Svg | Library | Menu"
+end insert_Menu
 
---> Dev | Menu
--
-on menu_Experiment displayView
-   put displayView
-end menu_Experiment
-
-
---> Deps
--
+on menu_Refresh displayView
+   put the displayed_Title of displayView into iFamilyName
+   display_IconFamily iFamilyName
+end menu_Refresh

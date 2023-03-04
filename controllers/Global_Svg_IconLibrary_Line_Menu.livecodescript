@@ -31,38 +31,25 @@ end menu_Target
 --> Global | Svg | IconLibrary | Line | Menu
 -
 on menu_DisplayIcon displayView
-   put the selected_line of displayView into iName
+   put the selected_line of displayView into iconName
    put the title_Text of displayView into iFamilyName
    --
-   put svgLibrary_ConstructPathName (iName, iFamilyName) into iPathName
-   put iconSVGPathFromName (iPathName) into svgPathData
+   put svgLibrary_ConstructPathName (iconName, iFamilyName) into iPathName
+   put iconSVGPathFromName (iPathName) into svgPathText
    -- put iconCodepointFromName (iPathName)
-   put svgPathData
+   --
+   display_SvgIcon iconName, svgPathText
+   put the result into svgButton
+   --
+   -- put svgPathText
+   return svgButton
 end menu_DisplayIcon
 
 on menu_RemoveIcon displayView
-   put the selected_line of displayView into iName
+   put the selected_line of displayView into iconName
    put the title_Text of displayView into iFamilyName
    --
-   put getCurrentIconFamily() into oFamilyName
-   setCurrentIconFamily iFamilyName
+   icon_Delete iconName, iFamilyName
    --
-   put iconData() into iData
-   breakpoint
-   --
-   setCurrentIconFamily oFamilyName
+   display_IconFamily iFamilyName
 end menu_RemoveIcon
-
-on _
-end _
-
-on submenu_Dev
-   return "Dev | Menu"
-end submenu_Dev
-
-
---> Dev | Menu
--
-on menu_Experiment displayView
-   put displayView
-end menu_Experiment
