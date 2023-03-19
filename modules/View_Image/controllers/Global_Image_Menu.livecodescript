@@ -36,3 +36,21 @@ on menu_DownloadFolder
    put the home folder & "/Downloads/" into downloadFolder
    finder_Reveal downloadFolder
 end menu_DownloadFolder
+
+private command _
+end _
+
+on menu_DisplayProject imageObject
+   put the template_Object of imageObject into tObject
+   --
+   put the project_Name of tObject into projectName
+   display_Project projectName
+end menu_DisplayProject
+
+on menu_GoView
+   put "View|Image|Fit Inside" into vName
+   --
+   put view_GetTemplateObject (vName) into tObject
+   object_GoTo tObject
+   put tObject
+end menu_GoView
