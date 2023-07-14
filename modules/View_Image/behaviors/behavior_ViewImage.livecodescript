@@ -19,12 +19,25 @@ local LocalArray
 
 --> Working on
 -
+getprop menu_Title
+   -- return "Global | Image | Menu"
+   put the view_MenuTitle of me into mTitle
+   return mTitle
+end menu_Title
+
 
 --> Events
 -
-on mouseUp
-   beep
-end mouseUp
+on mouseDown pButtonNumber
+   switch pButtonNumber
+      case 3
+         put the menu_Title of me into mTitle
+         menu_PopUp mTitle
+         break
+      default
+         pass mouseDown
+   end switch
+end mouseDown
 
 on resizeControl
    put the rect of me into viewRect
@@ -32,13 +45,64 @@ on resizeControl
 end resizeControl
 
 
+--> Displayed
+-
+getprop displayed_Data
+   put the filename of me into urlORFile
+   if urlORFile is empty then
+      put the text of me into someImage
+      return someImage
+   else
+      return urlORFile
+   end if
+end displayed_Data
+
+setprop displayed_Data imageOrURL
+   set the itemdelimiter to ":"
+   put item 1 of imageOrURL into someProtocol
+   switch someProtocol
+      case "https"
+      case "http"
+         set the filename of me to imageOrURL
+         break
+      case empty
+         set the filename of me to empty
+         set the text of me to empty
+         break
+      default
+         set the text of me to imageOrURL
+   end switch
+end displayed_Data
+
+
+--> Displayed
+-
+getprop image_File
+   return the image_URL of me
+end image_File
+
+setprop image_File someFile
+   set the image_URL of me to someFile
+   return the result
+end image_File
+
+getprop image_URL
+   return the filename of me
+end image_URL
+
+setprop image_URL someFile
+   lock screen
+   put the rect of me into oRect
+   set the filename of me to someFile
+   Layoutcontrol oRect
+   unlock screen
+   --
+   return imageObject
+end image_URL
+
+
 --> Events | Custom
 -
-on refreshDisplay
-   put the rect of me into viewRect
-   LayoutControl viewRect
-end refreshDisplay
-
 command LayoutControl pRect
    if pRect is empty then put the rect of me into pRect
    

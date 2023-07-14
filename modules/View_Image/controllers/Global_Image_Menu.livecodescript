@@ -31,14 +31,13 @@ on menu_ImportSvg imageObject
    set the text of imageObject to svgImage
 end menu_ImportSvg
 
+private on _
+end _
 
 on menu_DownloadFolder
    put the home folder & "/Downloads/" into downloadFolder
    finder_Reveal downloadFolder
 end menu_DownloadFolder
-
-private command _
-end _
 
 on menu_DisplayProject imageObject
    put the template_Object of imageObject into tObject
@@ -47,10 +46,26 @@ on menu_DisplayProject imageObject
    display_Project projectName
 end menu_DisplayProject
 
-on menu_GoView
+on menu_EditBehavior imageObject
+   put the behavior of imageObject into bObject
+   edit the script of bObject
+end menu_EditBehavior
+
+private on __
+end __
+
+on menu_ImageViewModule
+   put "View|Image" into vName
+   --
+   put view_GetTemplateObject (vName) into tObject
+   object_GoTo tObject
+   put tObject
+end menu_ImageViewModule
+
+on menu_FitInsideView
    put "View|Image|Fit Inside" into vName
    --
    put view_GetTemplateObject (vName) into tObject
    object_GoTo tObject
    put tObject
-end menu_GoView
+end menu_FitInsideView
