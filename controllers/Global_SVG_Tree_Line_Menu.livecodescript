@@ -28,6 +28,14 @@ private function _SvgUrl displayView
    return svgURL
 end _SvgUrl
 
+function url_FromShortFile shortSvgFile, someURL
+   -- set the itemdelimiter to slash
+   put someURL into svgURL
+   if char -1 of svgURL is not slash then put slash after svgURL
+   put shortSvgFile after svgURL
+   return svgURL
+end url_FromShortFile
+
 
 --> Global | SVG | Tree | Line | Menu
 -
@@ -46,3 +54,8 @@ end menu_DisplayXml
 
 on _
 end _
+
+on menu_VisitWebpage displayView
+   put _SvgUrl (displayView) into svgURL
+   launch url svgURL
+end menu_VisitWebpage

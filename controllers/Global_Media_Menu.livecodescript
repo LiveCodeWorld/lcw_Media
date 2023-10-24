@@ -47,6 +47,10 @@ on submenu_Ipfs
    return "Global | IPFS | Menu"
 end submenu_Ipfs
 
+on submenu_Screen
+   return "Global | Screen | Record | Menu"
+end submenu_Screen
+
 on _
 end _
 

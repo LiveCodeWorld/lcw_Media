@@ -581,7 +581,7 @@ on flickr_SetPersonInfoTable personID, personInfoTable
    flickr_SetUserLookUpArray userLookUpArray, userTableArray
    
    put personInfoTable into userTableArray [personID]
-   -- array_AddToIndex userName, "UserName Index", userTableArray 
+   -- indexArray_Add userName, "UserName Index", userTableArray 
    
    flickr_SetUserTableArray userTableArray
 end flickr_SetPersonInfoTable

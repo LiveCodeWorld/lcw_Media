@@ -39,6 +39,11 @@ on mouseDown pButtonNumber
    end switch
 end mouseDown
 
+on mouseDoubleUp pButtonNumber
+   put the icon_Data of me into iconData
+   launch_NounIcon iconData
+end mouseDoubleUp
+
 on resizeControl
    put the rect of me into viewRect
    LayoutControl viewRect

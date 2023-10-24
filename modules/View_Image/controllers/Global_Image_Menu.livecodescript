@@ -69,3 +69,10 @@ on menu_FitInsideView
    object_GoTo tObject
    put tObject
 end menu_FitInsideView
+
+private on ___
+end ___
+
+on submenu_Dev
+   return menu_DevTitle()
+end submenu_Dev

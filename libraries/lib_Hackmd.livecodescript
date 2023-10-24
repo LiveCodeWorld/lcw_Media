@@ -1,7 +1,7 @@
 ﻿script "lib_Hackmd"
 --> MetaData
 -
-copyright: Anonymous
+copyright: David Bovill
 license: GPLv3
 name: lib_Hackmd
 type: library
@@ -14,6 +14,33 @@ This is a cli hack in the place of a proper api
 
 --> Working on
 -
+function hackmd_FetchNote noteID
+   put "notes/" & noteID into restStem
+   put hackmd_Fetch (restStem) into noteArray
+   return noteArray ["content"]
+end hackmd_FetchNote
+
+function hackmd_ListMyNotes
+   return hackmd_Fetch ("notes")
+end hackmd_ListMyNotes
+
+function hackmd_Me
+   return hackmd_Fetch ("me")
+end hackmd_Me
+
+function hackmd_Fetch restStem
+   put hackmd_RestUrl (restStem) into restURL
+   --
+   put hackmd_GetApiKey() into apiKey
+   put jsonrpc_GetArray(restURL, apiKey) into restData
+   return restData
+end hackmd_Fetch
+
+function hackmd_RestUrl restStem
+   put "https://api.hackmd.io/v1/" & restStem into restURL
+   return restURL
+end hackmd_RestUrl
+   
 command hackmd_Deconstruct lexText, @lexTitle, @lexBody
    local lexMeta
    
@@ -51,6 +78,11 @@ end launch_HackmdHelp
 
 --> Hackmd
 -
+command hackmd_Launch noteID
+   put merge ("https://hackmd.io/[[noteID]]") into someURL
+   launch url someURL
+end hackmd_Launch
+
 function hackmd_FetchMarkdown noteID, pUseCli
    /*
    $ hackmd-cli export [--pdf|--md|--html] <note_id> <output_file>
@@ -124,6 +156,10 @@ command hackmd_Logout
    return shellResult
 end hackmd_Logout
 
-
---> Deps
--
+function hackmd_GetApiKey
+   return secret_Get ("hackmd")
+end hackmd_GetApiKey
+   
+   command hackmd_SetApiKey apiKey
+   secret_Set "hackmd", apiKey
+end hackmd_SetApiKey

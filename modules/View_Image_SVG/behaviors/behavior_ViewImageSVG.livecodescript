@@ -17,6 +17,8 @@ The scripts below are just work in progress for now.
 
 local LocalArray
 
+--> Working on
+-
 
 --> Events
 -
@@ -25,25 +27,6 @@ on LayoutControl pRect
    set the rect of me to pRect
 end LayoutControl
 
-
---> Depends on lib_SVG
--
-getprop svg_XML
-   get the name of me
-   put the htmltext of me into someHTML
-   put svg_Get (someHTML) into svgXML
-   return svgXML
-end svg_XML
-
-setprop svg_XML svgXML
-   put the htmltext of me into someHTML
-   svg_Set someHTML, svgXML
-   set the htmltext of me to someHTML
-end svg_XML
-
-
---> Events
--   
 on browserNavigateBegin clickedURL
    -- This gets called when the browser view is first opened
    -- and on every link clicked that loads a page
@@ -76,6 +59,157 @@ on browserFrameDocumentLoadBegin
    breakpoint
    put the params
 end browserFrameDocumentLoadBegin
+
+
+--> Graph
+-
+getprop graph_Style
+   return the graph_Style of me
+end graph_Style
+
+setprop graph_Style [dontRender] graphStyle
+   put the dot_File of me into dotFile
+   put dot_CommandFromGraphStyle (graphStyle) into dotCommand
+   set the graph_Style of me to graphStyle
+   if dontRender is true then return dotCommand
+   --
+   dot_CreateSvg dotFile, dotCommand
+   put the result into svgFile
+   set the svg_File [true] of me to svgFile
+   return dotCommand
+end graph_Style
+
+
+--> Dot
+-
+getprop dot_Array [pGraphStyle]
+   put the dot_File of me into dotFile
+   put dotArray_Get (dotFile, pGraphStyle, false) into dotArray
+   return dotArray
+end dot_Array
+
+setprop dot_Array [graphStyle] dotArray
+   put the dot_File of me into dotFile
+   if graphStyle is empty then
+      put the graph_Style of me into graphStyle
+   end if
+   --
+   dotArray_Set dotFile, dotArray
+   put the result into dotJSON
+   return dotJSON
+end dot_Array
+
+getprop dot_Text
+   put the dot_File of me into dotFile
+   put dot_GetText (dotFile) into dotText
+   return dotText
+end dot_Text
+
+setprop dot_Text [graphStyle] dotText
+   put the dot_File of me into dotFile
+   dot_SetText dotFile, dotText
+   --
+   dot_CreateGraph dotText, dotFile, graphStyle
+   put the result into svgFile
+   set the svg_File of me to svgFile
+   return svgFile
+end dot_Text
+
+
+--> SVG | Fluid
+-
+getprop svg_IsFluid
+   put the svg_Dimensions of me into myDimensions
+   return myDimensions = "100%,100%"
+end svg_IsFluid
+
+setprop svg_IsFluid someBoolean
+   if someBoolean is true then
+      set the svg_Dimensions of me to "100%,100%"
+   else
+      put the svg_ViewBoxDimensions of me into originalDimensions
+      set the svg_Dimensions of me to originalDimensions
+   end if
+end svg_IsFluid
+
+getprop graph_Style
+   return the graph_Style of me
+end graph_Style
+
+setprop graph_Style [dontRender] graph_Style
+   set the graph_Style of me to graph_Style
+   if dontRender is not true then
+      
+   end if
+end graph_Style
+
+
+--> SVG | Files
+-
+getprop svg_File
+   put the svg_File of me into svgPath
+   return svgPath
+end svg_File
+
+setprop svg_File [isFluid] svgPath
+   set the svg_File of me to svgPath
+   --
+   put "file:" & svgPath into svgURL
+   put url svgURL into svgXML
+   if isFluid is true then
+      _SetDimensions svgXML, "100%", "100%"
+   end if
+   --
+   put svgPath into svgTitle
+   put svg_GetHTMLTemplate() into htmlTemplate
+   put merge (htmlTemplate) into someHtml
+   set the htmltext of me to someHtml
+   --    
+   return someHtml
+end svg_File
+
+
+--> SVG | URL
+-
+getprop svg_URL svgURL
+   return the svg_URL of me
+   -- return LocalArray ["svg_URL"]
+end svg_URL
+
+setprop svg_URL [isFluid] svgURL
+   -- put svgURL into LocalArray ["svg_URL"]
+   set the svg_URL of me to svgURL
+   --
+   put url svgURL into svgXML
+   -- put svg_Get (svgXML) into svgXML
+   if isFluid is true then
+      _SetDimensions svgXML, "100%", "100%"
+   end if
+   
+   put svgURL into svgTitle
+   put svg_GetHTMLTemplate() into htmlTemplate
+   put merge (htmlTemplate) into someHtml
+   --
+   set the htmltext of me to someHtml
+   --
+   return someHtml
+end svg_URL
+
+
+--> Depends on lib_SVG
+-
+getprop svg_XML
+   get the name of me
+   put the htmltext of me into someHTML
+   put svg_Get (someHTML) into svgXML
+   return svgXML
+end svg_XML
+
+setprop svg_XML svgXML
+   put the htmltext of me into someHTML
+   svg_Set someHTML, svgXML
+   set the htmltext of me to someHTML
+end svg_XML
 
 
 --> Objects
@@ -182,66 +316,6 @@ end svg_Html
 setprop svg_Html someHTML
    set the htmltext of me to someHTML
 end svg_Html
-
-getprop svg_File
-   put LocalArray ["svg_URL"] into svgURL
-   if char 1 to 5 of svgURL is not "file:" then return empty
-   
-   delete char 1 to 5 of svgURL
-   return svgURL
-end svg_File
-
-setprop svg_File [isFluid] svgPath
-   put "file:" & svgPath into svgURL
-   put url svgURL into svgXML
-   -- put svgXML
-   if isFluid is true then
-      _SetDimensions svgXML, "100%", "100%"
-   end if
-   
-   put svgPath into svgTitle
-   put svg_GetHTMLTemplate() into htmlTemplate
-   put merge (htmlTemplate) into someHtml
-   
-   set the htmltext of me to someHtml
-   put svgURL into LocalArray ["svg_URL"]
-   
-   return someHtml
-end svg_File
-
-getprop svg_URL svgURL
-   return LocalArray ["svg_URL"]
-end svg_URL
-
-setprop svg_URL [isFluid] svgURL
-   put url svgURL into svgXML
-   -- put svg_Get (svgXML) into svgXML
-   if isFluid is true then
-      _SetDimensions svgXML, "100%", "100%"
-   end if
-   
-   put svgURL into svgTitle
-   put svg_GetHTMLTemplate() into htmlTemplate
-   put merge (htmlTemplate) into someHtml
-   
-   set the htmltext of me to someHtml
-   put svgURL into LocalArray ["svg_URL"]
-   return someHtml
-end svg_URL
-
-getprop svg_IsFluid
-   put the svg_Dimensions of me into myDimensions
-   return myDimensions = "100%,100%"
-end svg_IsFluid
-
-setprop svg_IsFluid someBoolean
-   if someBoolean is true then
-      set the svg_Dimensions of me to "100%,100%"
-   else
-      put the svg_ViewBoxDimensions of me into originalDimensions
-      set the svg_Dimensions of me to originalDimensions
-   end if
-end svg_IsFluid
 
 getprop svg_Width
    put the svg_HeaderArray of me into svgHeaderArray
@@ -391,3 +465,4 @@ private command _DeleteXmlTree
    delete variable LocalArray ["svgXmlTreeID"]
    return svgXmlTreeID
 end _DeleteXmlTree
+

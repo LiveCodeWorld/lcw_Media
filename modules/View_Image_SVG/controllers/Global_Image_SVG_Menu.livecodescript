@@ -40,7 +40,7 @@ end deleteHeaderKey_Params
 getprop displaySvg_Params
    return _UrlNameMenu()
 end displaySvg_Params
-   
+
 private function _UrlNameMenu
    put _ConstructNameArray() into nameArray
    put keys (nameArray) into nameMenu
@@ -65,79 +65,145 @@ private command _AddToNameArray @nameArray, sURL
    put sURL into nameArray [shortName]
 end _AddToNameArray
 
+getprop graphStyle_Param [svgView]
+   return the graph_Style of svgView
+end graphStyle_Param
+
+getprop graphStyle_Params
+   return dot_ListGraphStyles()
+end graphStyle_Params
+
+getprop checked_DisplayDotGraph [svgView]
+   put the linked_GraphView of svgView into graphView
+   return exists (graphView)
+end checked_DisplayDotGraph
+
+getprop checked_ScreenDimensions [graphView]
+   put the stack_IsProportional of graphView into sBoolean
+   return sBoolean
+end checked_ScreenDimensions
+
 
 --> Global | Image | SVG | Menu
 -
-on menu_DisplaySvg svgView, svgName
-   put _ConstructNameArray() into nameArray
-   put nameArray [svgName] into sURL
+on menu_DisplayDotGraph svgView
+   put the dot_File of svgView into dotFile
+   put the graph_Style of svgView into graphStyle
    --
-   set the svg_URL of svgView to sURL
-end menu_DisplaySvg
+   put the linked_GraphView of svgView into graphView
+   if exists (graphView) then
+      set the dot_File [graphStyle] of graphView to dotFile
+   else
+      put "View|Dot|Graph" into viewName
+      stack_CloneInvisible viewName
+      put the result into cloneStackName
+      put the long id of control 1 of cd 1 of stack cloneStackName into graphView
+      --
+      set the edge_Width of graphView to 1
+      set the dot_File [graphStyle] of graphView to dotFile
+      --
+      display_ShowStack graphView, cloneStackName
+      --
+      set the linked_SvgView of graphView to svgView
+      set the linked_GraphView of svgView to graphView
+   end if
+end menu_DisplayDotGraph
 
-on menu_FluidSvg svgView, someBoolean
-   set the svg_IsFluid of svgView to someBoolean
-end menu_FluidSvg
+on submenu_Save
+   return menu_CreateTitle ("Global | Dot | Save | Menu")
+end submenu_Save
 
-on _
+on menu_GraphStyle svgView, graphStyle
+   set the graph_Style of svgView to graphStyle
+end menu_GraphStyle
+
+private command _
 end _
 
-on menu_SvgTools svgView
-   display_ToolStack svgView
-end menu_SvgTools
+on menu_ResizeToScreen graphView
+   put the dot_Array of graphView into dotArray
+   --
+   put the dot_ScreenRect of graphView into bbRect
+   put bbRect into dotArray ["bb"]
+   delete variable dotArray ["size"]
+   put 16/9 into dotArray ["ratio"]
+   --
+   set the dot_Array of graphView to dotArray
+   put the result into newDot
+   display_Text newDOT
+end menu_ResizeToScreen
 
-on submenu_Display
-   return "Global | Svg | Display | Menu"
-end submenu_Display
-
-on submenu_Tree
-   return "Global | Svg | Tree | Menu"
-end submenu_Tree
-
-on submenu_SvgLibrary
-   return "Global | Svg | Library | Menu"
-end submenu_SvgLibrary
-
-on submenu_IconLibrary
-   return "Global | Svg | IconLibrary | Menu"
-end submenu_IconLibrary
+on menu_ScreenDimensions graphView
+   put the screen_ProportionalStackRect of graphView into nRect
+   set the stack_Rect of graphView to nRect
+end menu_ScreenDimensions
 
 on submenu_Assets
    return "Global | Svg | Assets | Menu"
 end submenu_Assets
 
-on submenu_Handler
-   return "Global | Svg | Handler | Menu"
-end submenu_Handler
+on menu_Decompose svgView
+   put the dot_File of svgView into dotFile
+   --
+   display_DotGraphs dotFile, svgView
+end menu_Decompose
+
+on menu_Recompose svgView
+   put the dot_File of svgView into dotFile
+   --
+   put gv_RecomposeDotFile (dotFile, "svg") into svgXML
+   set the svg_XML of svgView to svgXML
+   -- display_Json newJSON, "Dot Array"
+end menu_Recompose
+
+private command __
+end __
+
+on menu_LinkArray svgView
+   put the link_Array of svgView into linkArray
+   --
+   put the stack_Label of svgView into graphName
+   put the graph_Style of svgView into graphStyle
+   display_LinkArray linkArray, graphStyle, graphName
+end menu_LinkArray
+
+on menu_DataViewData svgView
+   put the dv_Data of svgView into dvData
+   --
+   put the stack_Label of svgView into graphName
+   put the graph_Style of svgView into graphStyle
+   display_Data dvData, graphStyle, graphName
+end menu_DataViewData
+
+on menu_StyleArray svgView
+   -- put the dot_File of svgView into dotFile
+   -- put the graph_Style of svgView into graphStyle
+   -- put the link_Array of svgView into linkArray
+   -- put the dv_Data of svgView into dvData
+   put the dot_StyleArray of svgView into dotStyleArray
+   --
+   put the stack_Label of svgView into graphName
+   put the graph_Style of svgView into graphStyle
+   display_Data dotStyleArray, graphStyle, graphName
+end menu_StyleArray
+
+private command ___
+end ___
+
+on menu_FluidSvg svgView, someBoolean
+   set the svg_IsFluid of svgView to someBoolean
+end menu_FluidSvg
+
+on menu_RevealSvgFile svgView
+   put the svg_File of svgView into svgFile
+   finder_Reveal svgFile
+end menu_RevealSvgFile
+
+on menu_SvgTools svgView
+   display_ToolStack svgView
+end menu_SvgTools
 
 on submenu_Dev
-   return "Dev | Menu"
+   return menu_DevTitle ("Global | Image | SVG | Menu")
 end submenu_Dev
 
-
---> Dev | Menu
--
-on _DisplaySvgPathText svgView
-   put the svg_XML of svgView into svgXML
-   put svg_GetPathText (svgXML)
-end _DisplaySvgPathText
-
-on _DeleteHeaderKey svgView, headerType
-   put the svg_HeaderArray of svgView into svgHeaderArray
-   delete variable svgHeaderArray [headerType]
-   set the svg_HeaderArray of svgView to svgHeaderArray
-end _DeleteHeaderKey
-
-on _SetScale svgView
-   put the svg_Scale of svgView into svgScale
-   put lcw_Ask ("Change the scale of the svg view?", svgScale) into svgScale
-   set the svg_Scale of svgView to svgScale
-end _SetScale
-
-on _
-end _
-
-on _EditSvgBehavior svgView
-   put the behavior of svgView into bObject
-   edit the script of bObject
-end _EditSvgBehavior

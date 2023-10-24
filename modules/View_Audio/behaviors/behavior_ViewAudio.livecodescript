@@ -104,11 +104,18 @@ setprop audio_Playing sBoolean
    end if
 end audio_Playing
 
+getprop audio_File
+   put the filename of me into audioFile
+   return audioFile
+end audio_File
+
 setprop audio_File [playAudio] audioFile
-   if exists (audioFile) then
+   if there is a file audioFile then
       set the filename of me to audioFile
    end if
-   -- set the audio_Playing of me to playAudio
+   if playAudio is a boolean then
+      set the audio_Playing of me to playAudio
+   end if
 end audio_File
 
 
