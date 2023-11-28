@@ -30,7 +30,6 @@ end checked_RecordScreen
 --> Global | Screen | Record | Menu
 -
 on menu_RecordScreen displayView
-   -- screen_StartRecording
    put empty into shortFile
    screen_ToggleRecord shortFile, true
 end menu_RecordScreen

@@ -111,7 +111,7 @@ end pageArray_FetchItemModel
 command pageArray_StoreItemModel wikiDomain, pageSlug, itemID, someText
    put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
    pageArray_SetItemText pageArray, itemID, someText
-   pageArray_Store wikiDomain, pageSlug, pageArray
+   pageArray_Set wikiDomain, pageSlug, pageArray
    put the result into wikipageURL
    return wikipageURL
 end pageArray_StoreItemModel

@@ -66,6 +66,10 @@ on menu_ChooseFolder dView
    put file_ListShort (audioFolder) into LocalArray ["audioFiles"]
 end menu_ChooseFolder
 
+on submenu_Whisper
+   return "Global | Whisper | Menu"
+end submenu_Whisper
+
 on submenu_Dev
    return menu_DevTitle()
 end submenu_Dev

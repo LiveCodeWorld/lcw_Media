@@ -21,7 +21,7 @@ command listenNotes_CreatePodcastWikipage episodeArray, pWikiDomain
    --
    put episodeArray ["title"] into podcastTitle
    put fedwiki_ConstructSlug (podcastTitle) into pageSlug
-   pageArray_Store pWikiDomain, pageSlug, pageArray
+   pageArray_Set pWikiDomain, pageSlug, pageArray
    --
    put the result into wikiUrl
    return wikiUrl
