@@ -35,6 +35,154 @@ function image_DetectType someImage
 end image_DetectType
 
 
+--> Image | Snapshot
+-
+getprop object_SnapShot [imageType]
+   put the long ID of the target into targetObject
+   put the stack_Object of targetObject into stackObject
+   
+   put the windowID of stackObject into wID
+   put the rect of targetObject into localRect
+   
+   put the defaultStack into oDefault
+   set the defaultStack to the stack_Object of targetObject
+   
+   switch imageType
+      case "Simple"
+         -- needed because otherwise long reference produces cross hairs
+         put the short ID of targetObject into someID
+         export snapshot from control ID someID to someImage as PNG
+         break
+      case "Transparent"
+         -- this will also snap any overlying windows
+         topLevel stackObject
+         put the global_Rect of targetObject into globalRect
+         if globalRect is not a rect then return empty
+         export snapshot from rect globalRect of targetObject to someImage as PNG
+         break
+      case "GIF"
+         export snapshot from rect localRect of window wID to someImage as GIF
+         break
+      case "JPG"
+         export snapshot from rect localRect of window wID to someImage as JPEG
+         break
+      case "JPEG"
+         export snapshot from rect localRect of window wID to someImage as JPEG
+         break
+      default
+         export snapshot from rect localRect of window wID to someImage as PNG
+   end switch
+   set the defaultStack to oDefault
+   return someImage
+end object_SnapShot
+
+function wiki_GetSnapPng someControl, newW
+   -- let's scale the export to wiki width
+   put 420 into newW
+   
+   put the rect of someControl into originalRect
+   put scale_Height (originalRect, newW) into newH
+   put newW,newH into exportDimensions
+   
+   export snapshot from someControl at size exportDimensions to someImage as PNG
+   return someImage
+end wiki_GetSnapPng
+
+function image_GetSnapShot imageViewOrRect, imageType
+   lock screen
+   if imageViewOrRect is a rect then
+      put imageViewOrRect into globalRect
+   else if exists(imageViewOrRect) then
+      put the image_Object of imageViewOrRect into imageObject
+      
+      -- don't snap the frame (and get global rect)
+      put the showborder of imageObject into oShowBorder
+      set the showborder of imageObject to false
+      put the rect of imageObject into imageRect
+      
+      put object_ExtractStackName(imageObject) into stackName
+      put rect_GetGlobal(imageRect, stackName) into globalRect
+   end if
+   
+   switch imageType
+      case "GIF"
+         export snapshot from rect globalRect to someImage as GIF
+         break
+      case "JPG"
+         export snapshot from rect globalRect to someImage as JPEG
+         break
+      case "JPEG"
+         export snapshot from rect globalRect to someImage as JPEG
+         break
+      default
+         export snapshot from rect globalRect to someImage as PNG
+   end switch
+   
+   if exists(imageObject) then set the showborder of imageObject to oShowBorder
+   unlock screen
+   return someImage
+end image_GetSnapShot
+
+on image_SnapRect gRect, someFile, imageFileType
+    if someFile is empty then
+        put merge("Export this image as a [[imageFileType]]...") into someComment
+        ask file someComment
+        put it into someFile
+        if somefile is empty then exit to top
+    end if
+    if imageFileType is empty then
+        -- guess from file extension
+        file_Deconstruct someFile, someRoot, shortName, imageExtension
+        if imageExtension is empty then put "png" into imageExtension
+        put image_GetFileType(imageExtension) into imageFileType
+    end if
+     
+    put the filetype into oFileType
+    set the filetype to imageFileType
+     
+    -- export snapshot from rect "0,0,200,200" to file "Nav.jpg" as JPEG
+    put merge("export snapshot from rect '[[gRect]]' to file '[[someFile]]' as [[imageFileType]]") into doScript
+    replace "'" with quote in doScript
+    do doScript
+     
+    set the filetype to oFileType
+    return someFile
+end image_SnapRect
+
+on image_SnapshotStack stackObject, someFile, imageFileType
+    if someFile is empty then
+        put merge("Export this image as a [[imageFileType]]...") into someComment
+        ask file someComment
+        put it into someFile
+        if somefile is empty then exit to top
+    end if
+    if imageFileType is empty then
+        -- guess from file extension
+        file_Deconstruct someFile, someRoot, shortName, imageExtension
+        if imageExtension is empty then put "png" into imageExtension
+        put image_GetFileType(imageExtension) into imageFileType
+    end if
+    
+    put the windowid of stackObject into someWindowID
+    put the rect of stackObject into stackRect
+    put the rect of card 1 of stackObject into cardRect
+    
+    put the filetype into oFileType
+    set the filetype to imageFileType
+     
+    put merge("export snapshot from rect '[[cardRect]]' of window [[someWindowID]] to file '[[someFile]]' as [[imageFormat]]") into doScript
+    -- put merge("export snapshot from rect '[[stackRect]]' to file '[[someFile]]' as [[imageFormat]]") into doScript
+     
+    replace "'" with quote in doScript
+    put doScript
+    breakpoint
+    do doScript
+     
+    set the filetype to oFileType
+    return someFile
+end image_SnapshotStack
+
+
 --> Image
 -
 function image_Find imageID, pStackNames
@@ -306,103 +454,6 @@ command image_ConvertFormat inputFile, saveToFile, imageExportFormat
     end switch
 end image_ConvertFormat
 
-
---> Image | Snapshot
--
-function image_GetSnapShot imageViewOrRect, imageType
-   lock screen
-   if imageViewOrRect is a rect then
-      put imageViewOrRect into globalRect
-   else if exists(imageViewOrRect) then
-      put the image_Object of imageViewOrRect into imageObject
-      
-      -- don't snap the frame (and get global rect)
-      put the showborder of imageObject into oShowBorder
-      set the showborder of imageObject to false
-      put the rect of imageObject into imageRect
-      
-      put object_ExtractStackName(imageObject) into stackName
-      put rect_GetGlobal(imageRect, stackName) into globalRect
-   end if
-   
-   switch imageType
-      case "GIF"
-         export snapshot from rect globalRect to someImage as GIF
-         break
-      case "JPG"
-         export snapshot from rect globalRect to someImage as JPEG
-         break
-      case "JPEG"
-         export snapshot from rect globalRect to someImage as JPEG
-         break
-      default
-         export snapshot from rect globalRect to someImage as PNG
-   end switch
-   
-   if exists(imageObject) then set the showborder of imageObject to oShowBorder
-   unlock screen
-   return someImage
-end image_GetSnapShot
-
-on image_SnapRect gRect, someFile, imageFileType
-    if someFile is empty then
-        put merge("Export this image as a [[imageFileType]]...") into someComment
-        ask file someComment
-        put it into someFile
-        if somefile is empty then exit to top
-    end if
-    if imageFileType is empty then
-        -- guess from file extension
-        file_Deconstruct someFile, someRoot, shortName, imageExtension
-        if imageExtension is empty then put "png" into imageExtension
-        put image_GetFileType(imageExtension) into imageFileType
-    end if
-     
-    put the filetype into oFileType
-    set the filetype to imageFileType
-     
-    -- export snapshot from rect "0,0,200,200" to file "Nav.jpg" as JPEG
-    put merge("export snapshot from rect '[[gRect]]' to file '[[someFile]]' as [[imageFileType]]") into doScript
-    replace "'" with quote in doScript
-    do doScript
-     
-    set the filetype to oFileType
-    return someFile
-end image_SnapRect
-
-on image_SnapshotStack stackObject, someFile, imageFileType
-    if someFile is empty then
-        put merge("Export this image as a [[imageFileType]]...") into someComment
-        ask file someComment
-        put it into someFile
-        if somefile is empty then exit to top
-    end if
-    if imageFileType is empty then
-        -- guess from file extension
-        file_Deconstruct someFile, someRoot, shortName, imageExtension
-        if imageExtension is empty then put "png" into imageExtension
-        put image_GetFileType(imageExtension) into imageFileType
-    end if
-    
-    put the windowid of stackObject into someWindowID
-    put the rect of stackObject into stackRect
-    put the rect of card 1 of stackObject into cardRect
-    
-    put the filetype into oFileType
-    set the filetype to imageFileType
-     
-    put merge("export snapshot from rect '[[cardRect]]' of window [[someWindowID]] to file '[[someFile]]' as [[imageFormat]]") into doScript
-    -- put merge("export snapshot from rect '[[stackRect]]' to file '[[someFile]]' as [[imageFormat]]") into doScript
-     
-    replace "'" with quote in doScript
-    put doScript
-    breakpoint
-    do doScript
-     
-    set the filetype to oFileType
-    return someFile
-end image_SnapshotStack
-
 function image_ChooseSaveToFile
     put merge("Export this image to...") into someComment
     ask file someComment
@@ -466,45 +517,45 @@ end image_GuessFileName
 
 
 function image_GetRevCropped cropRect, imageView
-    put the image_Object of imageView into imageObject
-     
-    lock screen
-    put the rect of imageView into oRect
-    image_ImportFileData imageObject
-    put the result into someImage
-    if someImage is empty then put the image_Contents of imageView into someImage
-     
-    if cropRect is empty then
-        put the image_CropArea of imageView into cropRect
-        if cropRect is empty then
-            return empty
-        else
-            set the image_CropArea of imageView to empty
-        end if
-    end if
-    put image_RectToAbsolute(cropRect, imageView) into relativeCropRect
-     
-    put the resize_Style of imageView into oStyle
-    put the image_Magnification of imageView into oMagnification
-    put the image_Scroll of imageView into oScroll
-    
-    set the image_Magnification of imageView to 1
-    -- set the resize_Style of imageView to "centre"
-     
-    put image_AbsoluteToRect(relativeCropRect, imageView) into originalCropRect
-     
-    put the short id of imageObject into imageID
-    crop image id imageID to originalCropRect
-    put the image_Contents of imageView into croppedImage
-    set the image_Contents of imageView to someImage
-    
-    set the image_Magnification of imageView to oMagnification
-    set the resize_Style of imageView to oStyle
-    set the image_Scroll of imageView to oScroll
-    -- set the view_Rect of imageView to oRect
-    -- set the image_CropArea of imageView to cropRect
-    unlock screen
-     
-    -- rect_CreateMask originalCropRect, "Test", imageView
-    return croppedImage
+   put the image_Object of imageView into imageObject
+   
+   lock screen
+   put the rect of imageView into oRect
+   image_ImportFileData imageObject
+   put the result into someImage
+   if someImage is empty then put the image_Contents of imageView into someImage
+   
+   if cropRect is empty then
+      put the image_CropArea of imageView into cropRect
+      if cropRect is empty then
+         return empty
+      else
+         set the image_CropArea of imageView to empty
+      end if
+   end if
+   put image_RectToAbsolute(cropRect, imageView) into relativeCropRect
+   
+   put the resize_Style of imageView into oStyle
+   put the image_Magnification of imageView into oMagnification
+   put the image_Scroll of imageView into oScroll
+   
+   set the image_Magnification of imageView to 1
+   -- set the resize_Style of imageView to "centre"
+   
+   put image_AbsoluteToRect(relativeCropRect, imageView) into originalCropRect
+   
+   put the short id of imageObject into imageID
+   crop image id imageID to originalCropRect
+   put the image_Contents of imageView into croppedImage
+   set the image_Contents of imageView to someImage
+   
+   set the image_Magnification of imageView to oMagnification
+   set the resize_Style of imageView to oStyle
+   set the image_Scroll of imageView to oScroll
+   -- set the view_Rect of imageView to oRect
+   -- set the image_CropArea of imageView to cropRect
+   unlock screen
+   
+   -- rect_CreateMask originalCropRect, "Test", imageView
+   return croppedImage
 end image_GetRevCropped

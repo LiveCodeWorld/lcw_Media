@@ -7,8 +7,9 @@ name: Global | Image | Menu
 type: controller
 version: 0.1
 
-/*Here you can describe this menu.
-Full help text should be provided on the linked wiki.*/
+/*
+A general menu to help with displaying images..
+*/
 
 
 --> Variables
@@ -17,7 +18,6 @@ local LocalArray
 
 --> Menu | Props
 -
-
 
 --> Global | Image | Menu
 -
@@ -30,6 +30,10 @@ on menu_ImportSvg imageObject
    put drawingSvgCompileFile (tSVGFile) into svgImage
    set the text of imageObject to svgImage
 end menu_ImportSvg
+
+on menu_ExportImage imageObject
+   put the image_File of imageObject into imageFile
+end menu_ExportImage
 
 private on _
 end _
@@ -54,21 +58,20 @@ end menu_EditBehavior
 private on __
 end __
 
-on menu_ImageViewModule
-   put "View|Image" into vName
-   --
-   put view_GetTemplateObject (vName) into tObject
+on menu_ImageTemplate
+   put view_GetTemplateObject ("View|Image") into tObject
    object_GoTo tObject
-   put tObject
-end menu_ImageViewModule
+end menu_ImageTemplate
 
-on menu_FitInsideView
-   put "View|Image|Fit Inside" into vName
-   --
-   put view_GetTemplateObject (vName) into tObject
+on menu_SvgButtonTemplate
+   put view_GetTemplateObject ("View|Button|Svg") into tObject
    object_GoTo tObject
-   put tObject
-end menu_FitInsideView
+end menu_SvgButtonTemplate
+
+on menu_FitInsideTemplate
+   put view_GetTemplateObject ("View|Image|Fit Inside") into tObject
+   object_GoTo tObject
+end menu_FitInsideTemplate
 
 private on ___
 end ___
@@ -76,3 +79,4 @@ end ___
 on submenu_Dev
    return menu_DevTitle()
 end submenu_Dev
+

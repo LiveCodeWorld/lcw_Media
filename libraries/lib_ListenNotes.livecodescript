@@ -644,7 +644,7 @@ private function _ConstructEpisodeBody podcastListData
       put episodeArray ["audio"] into audioURL
       put _ConstructAudioDescription  (episodeArray) into audioDescription
       --
-      put storyArray_ConstructAudio (audioUrl, audioDescription) into itemArray
+      put itemArray_ConstructAudio (audioUrl, audioDescription) into itemArray
       put itemArray into storyArray [itemNum]
    end repeat
    return storyArray

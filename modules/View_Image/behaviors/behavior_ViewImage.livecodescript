@@ -5,7 +5,7 @@ copyright: David Bovill
 license: GPLv3
 name: behavior_ViewImage
 type: behavior
-version: 0.1
+version: 0.2
 
 /*
 Here you make make notes as a basic form of help for this view.
@@ -20,9 +20,15 @@ local LocalArray
 --> Working on
 -
 getprop menu_Title
-   -- return "Global | Image | Menu"
-   put the view_MenuTitle of me into mTitle
+   put the menu_Title of me into mTitle
+   if mTitle is empty then
+      put the view_MenuTitle of me into mTitle
+   end if
    return mTitle
+end menu_Title
+
+setprop menu_Title mTitle
+   set the menu_Title of me to mTitle
 end menu_Title
 
 
@@ -62,20 +68,19 @@ getprop displayed_Data
    end if
 end displayed_Data
 
-setprop displayed_Data imageOrURL
-   set the itemdelimiter to ":"
-   put item 1 of imageOrURL into someProtocol
-   switch someProtocol
+setprop displayed_Data fileImageOrURL
+   switch token 1 of fileImageOrURL
       case "https"
       case "http"
-         set the filename of me to imageOrURL
+      case "/"
+         set the image_URL of me to fileImageOrURL
          break
       case empty
          set the filename of me to empty
          set the text of me to empty
          break
       default
-         set the text of me to imageOrURL
+         set the text of me to fileImageOrURL
    end switch
 end displayed_Data
 

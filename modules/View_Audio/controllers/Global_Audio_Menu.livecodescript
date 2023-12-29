@@ -44,6 +44,13 @@ end disabled_SelectAudio
 
 --> Global | Audio | Menu
 -
+on menu_TestSpeech audioView
+   put lcw_Ask ("Enter some text to speak...", "Thanks for all the fish", "OpenAI", audioView) into someText
+   put openAI_FetchSpeech (someText) into tempAudioFile
+   set the audio_File of audioView to tempAudioFile
+   finder_Reveal tempAudioFile
+end menu_TestSpeech
+
 on menu_SelectAudio audioView, shortFile
    set the defaultfolder to LocalArray ["audioFolder"]
    set the audio_File [true] of audioView to shortFile

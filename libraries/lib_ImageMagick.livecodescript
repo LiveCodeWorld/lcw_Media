@@ -9,21 +9,6 @@ version: 0.1
 
 --> Working on
 -
-on testClone pHow, whichImage
-   put _ImageURL (whichImage) into imageURL
-   put _TestImage (imageURL, pHow) into someImage
-   --
-   put the stack_BelowRect of stack "Image 1" into sRect
-   put empty into sRect
-   --
-   display_Clone "View|Image|Fit Inside", "Special Image", someImage, "image_Contents", sRect
-   put the result into displayView
-   --
-   display_SetMenu displayView, "View | Image", "title_Menu"
-   --
-   return displayView
-end testClone
-
 private function _TestImage imageURL, pHow
    put imageMagick_FetchImageType (imageURL) into imageType
    switch pHow
@@ -168,30 +153,6 @@ on imageMagick_Canny
    */
 end imageMagick_Canny
 
-private command _AddInput @someShell, pFormat
-   if pFormat is empty then
-      put space & "-" after someShell
-   else
-      put space & "[[pFormat]]:-" after someShell
-   end if
-end _AddInput
-
-private command _AddOutput @someShell, pFormat
-   if pFormat is empty then
-      put space & "-" after someShell
-   else
-      put space & "[[pFormat]]:-" after someShell
-   end if
-end _AddOutput
-
-private command _AddResize @someShell, sWidth, sHeight, pFormat
-   if pFormat is empty then
-      put space & "-resize [[sWidth]]x[[sHeight]]\>" after someShell
-   else
-      put space & "-resize [[sWidth]]x[[sHeight]]\>" after someShell
-   end if
-end _AddResize
-
 
 --> ImageMagick | Type
 -
@@ -328,3 +289,31 @@ function imageMagick_FetchIdentityArray imageURL
    put identityInfo into gpsArray ["identify"]
    return gpsArray
 end imageMagick_FetchIdentityArray
+
+
+--> Private 
+-
+private command _AddInput @someShell, pFormat
+   if pFormat is empty then
+      put space & "-" after someShell
+   else
+      put space & "[[pFormat]]:-" after someShell
+   end if
+end _AddInput
+
+private command _AddOutput @someShell, pFormat
+   if pFormat is empty then
+      put space & "-" after someShell
+   else
+      put space & "[[pFormat]]:-" after someShell
+   end if
+end _AddOutput
+
+private command _AddResize @someShell, sWidth, sHeight, pFormat
+   if pFormat is empty then
+      put space & "-resize [[sWidth]]x[[sHeight]]\>" after someShell
+   else
+      put space & "-resize [[sWidth]]x[[sHeight]]\>" after someShell
+   end if
+end _AddResize
+
