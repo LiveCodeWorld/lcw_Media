@@ -258,10 +258,10 @@ function listenNotes_FetchUpdatesPodcastPageArray podcastID, pPageTitle, pWikiDo
    if itemNumsToDelete = 0 then
       pageArray_AddMarkdown pageArray, "# Recent episodes"
       put the result into lastItemNum
-      pageArray_InsertAfter pageArray, storyArray, lastItemNum
+      pageArray_InsertStoryAfter pageArray, storyArray, lastItemNum
    else
       put item 1 of itemNumsToDelete - 1 into titleItemNum
-      pageArray_InsertAfter pageArray, storyArray, titleItemNum
+      pageArray_InsertStoryAfter pageArray, storyArray, titleItemNum
    end if
    return pageArray
 end listenNotes_FetchUpdatesPodcastPageArray
