@@ -264,7 +264,7 @@ function flickr_FindLocalImageFile photoID, pImageType, pFolder, pExtension
    
    folder_Format pFolder
    put pFolder & photoID & "/" into photoFolder
-   put folder_ShortFiles(photoFolder) into shortFiles
+   put file_ListShort(photoFolder) into shortFiles
    filter shortFiles with someFilter
    if shortFiles is empty then return empty
    put any line of shortFiles into shortFile

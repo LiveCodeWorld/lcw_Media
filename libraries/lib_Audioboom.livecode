@@ -184,7 +184,7 @@ function audioboom_ConstructFedwikiPageArray audioClipArray
    put mapLat & comma && mapLong && wikiText into mapText
    -- put fedwiki_ConstructOpenStreetMapDescription (locationDescription, mapZoom, mapLat, mapLong) into mapText
    
-   pageArray_AddMap pageArray, mapLat, mapLong, mapText, mapZoom
+   pageArray_AddMap pageArray, mapText, mapLat, mapLong, mapZoom
    pageArray_AddText pageArray, wikiText
    pageArray_CleanJournal pageArray
    return pageArray

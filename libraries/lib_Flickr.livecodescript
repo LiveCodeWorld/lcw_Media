@@ -60,7 +60,7 @@ function flickr_ConstructPhotoMapPageArray pageTitle, photoDescription, imageURL
          put firstParagraph into mapText
       end if
       put "[[" & pageTitle & "]]" into pinText
-      pageArray_AddMap pageArray, mapLat, mapLong, mapText, locationAccuracy, pinText, pTileType
+      pageArray_AddMap pageArray, mapText, mapLat, mapLong, locationAccuracy, pinText, pTileType
    end if
    
    put json_FromArray (pageArray) into pageJSON

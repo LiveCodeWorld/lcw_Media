@@ -18,12 +18,26 @@ local LocalArray
 
 --> Menu | Props
 -
+private function _ChooseImageFile imageObject
+   # Choose export location
+   put the image_Folder of imageObject into imageFolder
+   get the stack_Label of imageObject
+   put it & ".png" into shortFile
+   
+   put imageFolder & shortFile into imageFile
+   ask file prompt with imageFile
+   if it is empty then return empty
+   
+   put it into imageFile
+   return imageFile
+end _ChooseImageFile
+
 
 --> Global | Image | Menu
 -
 on menu_ImportSvg imageObject
-   put the home folder & "/Downloads/" into downloadFolder
-   answer file "Please select an SVG file:" with downloadFolder with type "SVG svg|SVG" -- "SVG:*.svg"
+   put the image_Folder of imageObject into imageFolder
+   answer file "Please select an SVG file:" with imageFolder with type "SVG svg|SVG" -- "SVG:*.svg"
    if the result is "Cancel" then exit to top
    
    put it into tSVGFile
@@ -32,16 +46,30 @@ on menu_ImportSvg imageObject
 end menu_ImportSvg
 
 on menu_ExportImage imageObject
-   put the image_File of imageObject into imageFile
+   -- put the image_File of imageObject into imageFile
+   put the image_Contents of imageObject into someImage
+   
+   put _ChooseImageFile (imageObject) into imageFile
+   put someImage into url ("binfile:/" & imageFile)
 end menu_ExportImage
 
 private on _
 end _
 
-on menu_DownloadFolder
-   put the home folder & "/Downloads/" into downloadFolder
-   finder_Reveal downloadFolder
-end menu_DownloadFolder
+on menu_RevealImageFolder imageObject
+   put the image_Folder of imageObject into imageFolder
+   finder_Reveal imageFolder
+end menu_RevealImageFolder
+
+on menu_SetImageFolder imageObject
+   put the image_Folder of imageObject into imageFolder
+   
+   answer folder prompt with imageFolder
+   if it is emty then exit to top
+   put it into imageFolder
+   
+   set the image_Folder of imageObject to imageFolder
+end menu_SetImageFolder
 
 on menu_DisplayProject imageObject
    put the template_Object of imageObject into tObject

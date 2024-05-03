@@ -16,6 +16,44 @@ Work in progress.
 
 --> Working on
 -
+function podcast_GetWikiDomain
+   -- return "cast.pod.club"
+   return "podcast.anarchive.earth"
+end podcast_GetWikiDomain
+
+
+--> Podcast | Model
+-
+function podclub_FetchPodcastIndex
+   put podcast_GetWikiDomain() into wikiDomain
+   put pageArray_FetchItemModel (wikiDomain, "podcast-index", "177c38e4139ed7de") into podcastIndex
+   replace "- [[" with empty in podcastIndex
+   replace "]]" with empty in podcastIndex
+   return podcastIndex
+end podclub_FetchPodcastIndex
+
+command podclub_StorePodcastIndex podcastIndex
+   put podcast_GetWikiDomain() into wikiDomain
+   put fedwiki_MarkdownIndex (podcastIndex) into markdownIndex
+   pageArray_StoreItemModel wikiDomain, "podcast-index", "177c38e4139ed7de", markdownIndex
+   put the result into wikipageURL
+   return wikipageURL
+end podclub_StorePodcastIndex
+
+function pageArray_FetchItemModel wikiDomain, pageSlug, itemID
+   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
+   put pageArray_GetItemText (pageArray, itemID) into someText
+   return someText
+end pageArray_FetchItemModel
+
+command pageArray_StoreItemModel wikiDomain, pageSlug, itemID, someText
+   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
+   pageArray_SetItemText pageArray, itemID, someText
+   pageArray_Set wikiDomain, pageSlug, pageArray
+   put the result into wikipageURL
+   return wikipageURL
+end pageArray_StoreItemModel
+
 
 --> Podcast
 -
@@ -38,15 +76,17 @@ on display_CuratedPodcasts
 end display_CuratedPodcasts
 
 command podcast_Launch podcastName
-   fedwiki_Launch "cast.pod.club", podcastName
+   put podcast_GetWikiDomain() into wikiDomain
+   fedwiki_Launch wikiDomain, podcastName
 end podcast_Launch
 
 
 --> Podclub | Model
 -
 function podclub_FetchPocastMetadata podcastTitle
+   put podcast_GetWikiDomain() into wikiDomain
    put fedwiki_ConstructSlug (podcastTitle) into pageSlug
-   put pageArray_Fetch ("cast.pod.club", pageSlug, true) into pageArray
+   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
    put pageArray ["story"][1]["text"] into firstPara
    --
    delete line 1 of firstPara
@@ -88,36 +128,9 @@ command fedwiki_DeconstructExternalLink someLink, @someURL, @linkWord
    end if
 end fedwiki_DeconstructExternalLink
 
-function podclub_FetchPodcastIndex
-   put pageArray_FetchItemModel ("cast.pod.club", "podcast-index", "177c38e4139ed7de") into podcastIndex
-   replace "- [[" with empty in podcastIndex
-   replace "]]" with empty in podcastIndex
-   return podcastIndex
-end podclub_FetchPodcastIndex
-
-command podclub_StorePodcastIndex podcastIndex
-   put fedwiki_MarkdownIndex (podcastIndex) into markdownIndex
-   pageArray_StoreItemModel "cast.pod.club", "podcast-index", "177c38e4139ed7de", markdownIndex
-   put the result into wikipageURL
-   return wikipageURL
-end podclub_StorePodcastIndex
-
-function pageArray_FetchItemModel wikiDomain, pageSlug, itemID
-   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
-   put pageArray_GetItemText (pageArray, itemID) into someText
-   return someText
-end pageArray_FetchItemModel
-
-command pageArray_StoreItemModel wikiDomain, pageSlug, itemID, someText
-   put pageArray_Fetch (wikiDomain, pageSlug, true) into pageArray
-   pageArray_SetItemText pageArray, itemID, someText
-   pageArray_Set wikiDomain, pageSlug, pageArray
-   put the result into wikipageURL
-   return wikipageURL
-end pageArray_StoreItemModel
-
 function podcast_ListCurated pLoad
-   put fedwiki_FetchSitemapArray ("cast.pod.club", pLoad) into sitemapArray
+   put podcast_GetWikiDomain() into wikiDomain
+   put fedwiki_FetchSitemapArray (wikiDomain, pLoad) into sitemapArray
    put fedwiki_GetSitemapTitles (sitemapArray) into pageTitles
    --
    line_Delete "Welcome Visitors", pageTitles

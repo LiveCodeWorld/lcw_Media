@@ -87,13 +87,46 @@ end displayed_Data
 
 --> Displayed
 -
+getprop image_Folder
+   put the image_Folder of me into imagefolder
+   if there is not a folder imagefolder then
+      put the home folder & "/Downloads/" into imagefolder
+   end if
+   return imagefolder
+end image_Folder
+
+setprop image_Folder imagefolder
+   set the image_Folder of me to imagefolder
+end image_Folder
+
+getprop image_Contents
+   -- put the image_Object of me into imageObject
+   put the filename of me into sFile
+   if sFile is empty then
+      put the text of me into someImage
+   else
+      put "binfile:/" & sFile into imageURL
+      put url imageURL into someImage
+   end if
+   return someImage
+end image_Contents
+
+setprop image_Contents someImage
+   set the text of me to someImage
+   return the image_Object of me
+end image_Contents
+
 getprop image_File
    return the image_URL of me
 end image_File
 
-setprop image_File someFile
-   set the image_URL of me to someFile
-   return the result
+setprop image_File imageFile
+   set the filename of me to someFile
+   --
+   set the itemdelimiter to slash
+   put item 1 to -2 of someFile into imageFolder
+   set the image_Folder of me to imageFolder
+   return imageFolder
 end image_File
 
 getprop image_URL
@@ -222,6 +255,10 @@ end rect_SetHeight
 
 --> Objects
 -
+getprop image_Object
+   return the long id of me
+end image_Object
+
 getprop view_Object
    return the long id of me
 end view_Object

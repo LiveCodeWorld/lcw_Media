@@ -22,10 +22,155 @@ curl -X GET --include 'https://listen-api.listennotes.com/api/v2/podcasts/4d3fe7
 --> Variables
 -
 constant ListenNotes_BaseRestURL = "https://listen-api.listennotes.com/api/v2/"
+constant LcwRestUrl = "http://rest.livecode.world" -- "http://rest.livecode.world"
 
 
 --> Working on
 -
+command listenNotes_CreatePodcastWikipage episodeArray, pWikiDomain
+   if pWikiDomain is empty then put podcast_GetWikiDomain() into pWikiDomain
+   
+   put listenNotes_ConstructPodcastPageArray (episodeArray) into pageArray
+   --
+   put episodeArray ["title"] into podcastTitle
+   put fedwiki_ConstructSlug (podcastTitle) into pageSlug
+   pageArray_Set pWikiDomain, pageSlug, pageArray
+   --
+   put the result into wikiUrl
+   return wikiUrl
+end listenNotes_CreatePodcastWikipage
+
+
+--> ListenNotes | Fetch
+-
+function listenNotes_FetchPodcastPageArray podcastID
+   put listenNotes_FetchPodcastArray (podcastID) into podcastListData
+   put listenNotes_ConstructPodcastPageArray (podcastListData) into pageArray
+   return pageArray
+end listenNotes_FetchPodcastPageArray
+
+function listenNotes_ConstructPodcastPageArray podcastListData
+   local pageArray
+   
+   put podcastListData ["id"] into podcastID
+   put podcastListData ["title"] into podcastTitle
+   put podcastListData ["description"] into podcastDescription
+   put podcastListData ["rss"] into podcastRSS
+   put podcastListData ["thumbnail"] into podcastThumbnail
+   put podcastListData ["image"] into podcastImageURL
+   put podcastListData ["website"] into podcastURL
+   put podcastListData ["total_episodes"] into totalEpisodes
+   
+   -- construct basic page
+   put "Here is a podcast that I need to write  about..." into pageMarkdown
+   fedwiki_AddExternalLink pageMarkdown, podcastRSS, "rss"
+   put pageArray_Construct (podcastTitle, pageMarkdown) into pageArray
+   --
+   put podcastTitle && "RSS" into buttonName
+   pageArray_AddRssButton pageArray, podcastRSS, buttonName
+   --
+   put "[[" & podcastTitle & "]]" into imageCaption
+   pageArray_AddThumbnail pageArray, podcastImageURL, imageCaption, podcastURL
+   --
+   put word 1 to -1 of text_HtmlToUtf8 (podcastDescription) into someMarkdown
+   pageArray_AddMarkdown pageArray, someMarkdown
+   --
+   pageArray_AddEpisodeUpdateButton pageArray, podcastID, podcastTitle
+   --
+   pageArray_AddMarkdown pageArray, "# Recent episodes"
+   _AddEpisodePodcasts pageArray, podcastListData
+   --
+   pageArray_AddMarkdown pageArray, "# Metadata"
+   _AddPodcastMetadata pageArray, podcastListData
+   --
+   _addPodcastSearchForm pageArray, podcastID, podcastTitle
+   --
+   return pageArray
+end listenNotes_ConstructPodcastPageArray
+
+function listenNotes_FetchPodcastArray podcastID
+   /*
+   -- here we just get the most recent 10 episodes from the api
+   -- seems to only return 10 recent episodes
+   -- we could use the rss to get more
+   
+   -- v2
+   curl -X GET --include 'https://listen-api.listennotes.com/api/v2/podcasts/4d3fe717742d4963a85562e9f84d8c79?next_episode_pub_date=1479154463000&sort=recent_first' \
+   -H 'X-ListenAPI-Key: <SIGN UP FOR API KEY>'
+   
+   -- v1
+   curl --request GET \
+   --url 'https://rapidapi.p.rapidapi.com/api/v1/podcasts/9d6939745ed34e3aab0eb78a408ab40d?next_episode_pub_date=1479154463000&sort=recent_first' \
+   --header 'x-rapidapi-host: listennotes.p.rapidapi.com' \
+   --header 'x-rapidapi-key: <SIGN UP FOR API KEY>'
+   */
+   put "podcasts/" & podcastID into apiPath
+   --
+   put listenNotes_RestGet (apiPath, empty, "v1") into someJSON
+   -- put utf8_Encode (someJSON) into someJSON
+   put json_ToArray (someJSON) into responseArray
+   return responseArray
+end listenNotes_FetchPodcastArray
+
+function listenNotes_FetchUpdatesPodcastPageArray podcastID, pPageTitle, pWikiDoamin
+   if pWikiDoamin is empty then put podcast_GetWikiDomain() into pWikiDoamin
+   
+   put listenNotes_FetchPodcastArray (podcastID) into podcastListData
+   put _ConstructEpisodeBody (podcastListData) into storyArray
+   --
+   if pPageTitle is empty then
+      # Get from metadata from podcastID
+      put podcastListData ["title"] into pPageTitle
+   end if
+   
+   # Get a Template
+   put fedwiki_ConstructSlug (pPageTitle) into pPageSlug
+   put pageArray_Fetch (pWikiDoamin, pPageSlug) into pageArray
+   --
+   pageArray_DeleteSection pageArray, "Recent episodes"
+   put the result into itemNumsToDelete
+   --
+   if itemNumsToDelete = 0 then
+      pageArray_AddMarkdown pageArray, "# Recent episodes"
+      put the result into lastItemNum
+      pageArray_InsertStoryAfter pageArray, storyArray, lastItemNum
+   else
+      put item 1 of itemNumsToDelete - 1 into titleItemNum
+      pageArray_InsertStoryAfter pageArray, storyArray, titleItemNum
+   end if
+   return pageArray
+end listenNotes_FetchUpdatesPodcastPageArray
+
+function listenNotes_GetRecentPodcastSection podcastListData
+   put podcastListData ["episodes"] into episodesData
+   repeat with itemNum = 1 to item 2 of the extents of episodesData
+      put episodesData [itemNum] into episodeArray
+      --
+      put episodeArray ["audio"] into audioURL
+      put _ConstructAudioDescription  (episodeArray) into audioDescription
+      pageArray_AddAudio pageArray, audioUrl, audioDescription
+   end repeat
+   pageArray_ReplaceSectionBody pageArray, "Recent episodes", storyArray
+end listenNotes_GetRecentPodcastSection
+
+
+--> ListenNotes | Episode
+-
+function listenNotes_FetchEpisodeArray episodeID
+   /* curl -X GET -s 'https://listen-api.listennotes.com/api/v2/episodes/6b6d65930c5a4f71b254465871fed370?show_transcript=1' \
+   -H 'X-ListenAPI-Key: ed3344a8fe4848fcab48118745da87ff'
+   */
+   -- curl --get --include 'https://listennotes.p.mashape.com/api/v1/episodes/7fbabe370daf4e34a225bce232764f96'
+   --
+   put "episodes/" & episodeID into apiPath
+   put listenNotes_RestGet (apiPath, empty, "v2") into episodeJson
+   --
+   replace "\u00a0" with empty in episodeJson -- hack to remove "¬"
+   --
+   put json_ToArray (episodeJson) into episodeArray
+   return episodeArray
+end listenNotes_FetchEpisodeArray
+
 function listenNotes_FindEpisode searchTerm, pPodcastID, pExact
    put listenNotes_FetchEpisodeJSON (searchTerm, pPodcastID, pExact) into someJSON
    put json_ToArray (someJSON) into episodeArray
@@ -98,12 +243,12 @@ command pageArray_AddRssButton @pageArray, podcastRSS, pTitle, pWikiDomain, pRss
    if pRssLastUpdated is not empty then put pRssLastUpdated into hiddenKeyValueArray ["rssLastUpdated"]
    if pDisplayStyle is not empty then put pDisplayStyle into hiddenKeyValueArray ["displayStyle"]
    --
-   put "https://rest.livecode.world/podcast/rss" into postURL
+   put LcwRestUrl & "/podcast/rss" into postURL
    pageArray_AddButton pageArray, buttonName, postURL, hiddenKeyValueArray
 end pageArray_AddRssButton
 
 command pageArray_AddEpisodeUpdateButton @pageArray, podcastID, pPageTitle
-   put "https://rest.livecode.world/podcast/updateRecent" into postURL
+   put LcwRestUrl & "/podcast/updateRecent" into postURL
    --
    put podcastID into hiddenKeyValueArray ["podcastID"]
    if pPageTitle is not empty then put pPageTitle into hiddenKeyValueArray ["pageTitle"]
@@ -117,7 +262,7 @@ end pageArray_AddEpisodeUpdateButton
 function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonCommand
    if pButtonCommand is empty then put "importPodcast" into pButtonCommand
    --
-   put "https://rest.livecode.world/podcast/" & pButtonCommand into postURL
+   put LcwRestUrl & "/podcast/" & pButtonCommand into postURL
    --
    if pUseLabel is true then
       put "Import" into buttonName
@@ -135,7 +280,7 @@ function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonComm
 end podcast_ConstructButton
 
 function podcast_ConstructButtonTemplate pUseLabel
-   put "https://rest.livecode.world/podcast/importPodcast" into postURL
+   put LcwRestUrl & "/podcast/importPodcast" into postURL
    --
    put "{{podcastTitle}}" into curlyTitle
    if pUseLabel is true then
@@ -238,88 +383,6 @@ function listenNotes_ScrapeEpisodeAttributeArray someHtml
 end listenNotes_ScrapeEpisodeAttributeArray
 
 
---> ListenNotes | Fetch
--
-function listenNotes_FetchUpdatesPodcastPageArray podcastID, pPageTitle, pWikiDoamin
-   if pWikiDoamin is empty then put "cast.pod.club" into pWikiDoamin
-   
-   put listenNotes_FetchPodcastArray (podcastID) into podcastListData
-   if pPageTitle is empty then
-      put podcastListData ["title"] into pPageTitle
-   end if
-   put fedwiki_ConstructSlug (pPageTitle) into pPageSlug
-   put pageArray_Fetch (pWikiDoamin, pPageSlug) into pageArray
-   --
-   pageArray_DeleteSection pageArray, "Recent episodes"
-   put the result into itemNumsToDelete
-   --
-   put _ConstructEpisodeBody (podcastListData) into storyArray
-   --
-   if itemNumsToDelete = 0 then
-      pageArray_AddMarkdown pageArray, "# Recent episodes"
-      put the result into lastItemNum
-      pageArray_InsertStoryAfter pageArray, storyArray, lastItemNum
-   else
-      put item 1 of itemNumsToDelete - 1 into titleItemNum
-      pageArray_InsertStoryAfter pageArray, storyArray, titleItemNum
-   end if
-   return pageArray
-end listenNotes_FetchUpdatesPodcastPageArray
-
-function listenNotes_GetRecentPodcastSection podcastListData
-   put podcastListData ["episodes"] into episodesData
-   repeat with itemNum = 1 to item 2 of the extents of episodesData
-      put episodesData [itemNum] into episodeArray
-      --
-      put episodeArray ["audio"] into audioURL
-      put _ConstructAudioDescription  (episodeArray) into audioDescription
-      pageArray_AddAudio pageArray, audioUrl, audioDescription
-   end repeat
-   pageArray_ReplaceSectionBody pageArray, "Recent episodes", storyArray
-end listenNotes_GetRecentPodcastSection
-
-function listenNotes_ConstructPodcastPageArray podcastListData
-   local pageArray
-   
-   put podcastListData ["id"] into podcastID
-   put podcastListData ["title"] into podcastTitle
-   put podcastListData ["description"] into podcastDescription
-   put podcastListData ["rss"] into podcastRSS
-   put podcastListData ["thumbnail"] into podcastThumbnail
-   put podcastListData ["image"] into podcastImageURL
-   put podcastListData ["website"] into podcastURL
-   put podcastListData ["total_episodes"] into totalEpisodes
-   
-   -- construct basic page
-   put "Here is a podcast that I need to write  about..." into pageMarkdown
-   fedwiki_AddExternalLink pageMarkdown, podcastRSS, "rss"
-   put pageArray_Construct (podcastTitle, pageMarkdown) into pageArray
-   --
-   put podcastTitle && "RSS" into buttonName
-   pageArray_AddRssButton pageArray, podcastRSS, buttonName
-   --
-   put "[[" & podcastTitle & "]]" into imageCaption
-   -- pageArray_AddImage pageArray, podcastImageURL, imageCaption, podcastURL
-   pageArray_AddThumbnail pageArray, podcastImageURL, imageCaption, podcastURL
-   --
-   put word 1 to -1 of text_HtmlToUtf8 (podcastDescription) into someMarkdown
-   pageArray_AddMarkdown pageArray, someMarkdown
-   -- pageArray_AddHTML pageArray, podcastDescription
-   --
-   pageArray_AddEpisodeUpdateButton pageArray, podcastID, podcastTitle
-   --
-   pageArray_AddMarkdown pageArray, "# Recent episodes"
-   _AddEpisodePodcasts pageArray, podcastListData
-   --
-   pageArray_AddMarkdown pageArray, "# Metadata"
-   _AddPodcastMetadata pageArray, podcastListData
-   --
-   _addPodcastSearchForm pageArray, podcastID, podcastTitle
-   --
-   return pageArray
-end listenNotes_ConstructPodcastPageArray
-
-
 --> ListenNotes | Find
 -
 function listenNotes_FindPodcast podcastTitle, pOnlyIn, pOffset
@@ -355,7 +418,7 @@ function listenNotes_ConstructEpisodePageArray episodeID, pEpisodeURL
    try
       put listenNotes_FetchEpisodeArray (episodeID) into episodeArray
    catch e
-      fedwiki_ExitAndReturnError "With listenNotes_FetchEpisodeArray()", "Error"
+      transport_ExitAndReturnError "With listenNotes_FetchEpisodeArray()", "Error"
    end try
    --
    put episodeArray ["description"] into episodeDescriptionHTML
@@ -447,15 +510,7 @@ function listenNotes_FoundPageArray foundEpisodeData
       put CR & "<p/>" after episodeThumbHTML
       
       -- add button
-      /*
-      <div align=center>
-      <form action='https://rest.livecode.world/podcast/importPodcast'>
-      <input name='podcastTitle' value='Import' type='hidden'>
-      <input name='podcastID' value='8f0714068478481192cf9553881463d9' type='hidden'>
-      <button type='submit'>Import Episode</button>
-      </form></div>
-      */
-      put "https://rest.livecode.world/podcast/importEpisode" into postURL
+      put LcwRestUrl & "/podcast/importEpisode" into postURL
       put episodeID into inputKeyValueArray ["episodeID"]
       put fedwiki_ConstructButtonForm ("Import Episode", postURL, inputKeyValueArray, empty, "center") into buttonHTML
       put CR & buttonHTML after episodeThumbHTML
@@ -471,31 +526,6 @@ function listenNotes_FoundPageArray foundEpisodeData
    --
    return pageArray
 end listenNotes_FoundPageArray
-
-
---> ListenNotes
--
-function listenNotes_FetchPodcastPageArray podcastID
-   put listenNotes_FetchPodcastArray (podcastID) into podcastListData
-   put listenNotes_ConstructPodcastPageArray (podcastListData) into pageArray
-   return pageArray
-end listenNotes_FetchPodcastPageArray
-
-
-
---> ListenNotes | Episode
--
-function listenNotes_FetchEpisodeArray episodeID
-   -- curl --get --include 'https://listennotes.p.mashape.com/api/v1/episodes/7fbabe370daf4e34a225bce232764f96'
-   --
-   put "episodes/" & episodeID into apiPath
-   put listenNotes_RestGet (apiPath) into episodeJson
-   --
-   replace "\u00a0" with empty in episodeJson -- hack to remove "¬"
-   --
-   put json_ToArray (episodeJson) into episodeArray
-   return episodeArray
-end listenNotes_FetchEpisodeArray
 
 
 --> Listen | Notes | Podcast
@@ -531,30 +561,6 @@ function listenNotes_ConstructPodcastTitleArray resultArray
    end repeat
    return podcastTitleArray
 end listenNotes_ConstructPodcastTitleArray
-
-function listenNotes_FetchPodcastArray podcastID
-   /*
-   -- here we just get the most recent 10 episodes from the api
-   -- seems to only return 10 recent episodes
-   -- we could use the rss to get more
-   
-   -- v2
-   curl -X GET --include 'https://listen-api.listennotes.com/api/v2/podcasts/4d3fe717742d4963a85562e9f84d8c79?next_episode_pub_date=1479154463000&sort=recent_first' \
-   -H 'X-ListenAPI-Key: <SIGN UP FOR API KEY>'
-   
-   -- v1
-   curl --request GET \
-   --url 'https://rapidapi.p.rapidapi.com/api/v1/podcasts/9d6939745ed34e3aab0eb78a408ab40d?next_episode_pub_date=1479154463000&sort=recent_first' \
-   --header 'x-rapidapi-host: listennotes.p.rapidapi.com' \
-   --header 'x-rapidapi-key: <SIGN UP FOR API KEY>'
-   */
-   put "podcasts/" & podcastID into apiPath
-   --
-   put listenNotes_RestGet (apiPath, empty, "v1") into someJSON
-   -- put utf8_Encode (someJSON) into someJSON
-   put json_ToArray (someJSON) into responseArray
-   return responseArray
-end listenNotes_FetchPodcastArray
 
 
 --> ListenNotes | Recommendations
@@ -614,7 +620,7 @@ private command _addPodcastSearchForm @pageArray, podcastID, podcastTitle
    -- put podcast_ConstructButton (podcastTitle, podcastID, false, "findEpisodeInPodcast") into formHTML
    put "findEpisodeInPodcast" into formHandlerName
    --
-   put "https://rest.livecode.world/podcast/" & formHandlerName into postURL
+   put LcwRestUrl & "/podcast/" & formHandlerName into postURL
    put podcastID into hiddenKeyValueArray ["podcastID"]
    put podcastTitle into hiddenKeyValueArray ["podcastTitle"] -- not needed
    --
@@ -626,15 +632,16 @@ end _addPodcastSearchForm
 private function _ConstructSimpleHeader searchTerm, nextOffsetNum, totalResults, searchTime
    put urlencode (searchTerm) into searchTerm
    --
-   put "<form action='https://rest.livecode.world/bbc/listenNotes'>" into someForm
-   put CR & merge ("Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;") after someForm
+   put "<form action='[[LcwRestUrl]]/bbc/listenNotes'>" into someForm
+   put CR & "Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;" after someForm
    --
-   put CR & merge ("<input name='search_Term' value='[[searchTerm]]'  type='hidden'>") after someForm
-   put CR & merge ("<input name='search_Offset' value='[[nextOffsetNum]]' type='hidden'>") after someForm
+   put CR & "<input name='search_Term' value='[[searchTerm]]'  type='hidden'>" after someForm
+   put CR & "<input name='search_Offset' value='[[nextOffsetNum]]' type='hidden'>" after someForm
    --
    put CR & "<button type='submit'>More</button>" after someForm
    put CR & "</form>" after someForm
-   return someForm
+   --
+   return merge (someForm)
 end _ConstructSimpleHeader
 
 private function _ConstructEpisodeBody podcastListData
@@ -649,6 +656,17 @@ private function _ConstructEpisodeBody podcastListData
    end repeat
    return storyArray
 end _ConstructEpisodeBody
+
+private function _ConstructAudioDescription episodeArray
+   put episodeArray ["title"] into episodeTitle
+   put episodeArray ["listennotes_url"] into listenURL
+   --
+   put episodeTitle  into audioDescription
+   -- put "." && html_StripAllTags (episodeArray ["description"]) after audioDescription
+   fedwiki_AddExternalLink audioDescription, listenURL, "listen"
+   --
+   return audioDescription
+end _ConstructAudioDescription
 
 private command _AddEpisodePodcasts @pageArray, podcastListData
    put podcastListData ["episodes"] into episodesData
@@ -738,17 +756,6 @@ private command _AddEpisodePodcastSection @pageArray, episodeArray
    return podcastMarkdown
 end _AddEpisodePodcastSection
 
-private function _ConstructAudioDescription episodeArray
-   put episodeArray ["title"] into episodeTitle
-   put episodeArray ["listennotes_url"] into listenURL
-   --
-   put episodeTitle  into audioDescription
-   -- put "." && html_StripAllTags (episodeArray ["description"]) after audioDescription
-   fedwiki_AddExternalLink audioDescription, listenURL, "listen"
-   --
-   return audioDescription
-end _ConstructAudioDescription
-
 private function _VersionBaseUrl
    put "https://listennotes.p.rapidapi.com/api/v1/" into baseURL
    return baseURL
@@ -775,7 +782,7 @@ private function _ConstructPageArrayTop pageTitle, searchTerm, nextOffsetNum, to
    --
    put pageTitle into pageArray ["title"]
    pageArray_AddHtml pageArray, someHTML
-   put pageArray_ConstructJournal (pageTitle) into pageArray ["journal"] 
+   put journalArray_Construct (pageTitle) into pageArray ["journal"] 
    --
    pageArray_AddPagefold pageArray, foldText
    return pageArray

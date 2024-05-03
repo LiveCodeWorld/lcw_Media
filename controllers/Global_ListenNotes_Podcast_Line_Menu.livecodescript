@@ -18,32 +18,34 @@ local LocalArray
 
 --> Menu | Props
 -
+getprop menu_Target [tObject]   
+   put the display_View of tObject into dView
+   return dView
+end menu_Target
+
+getprop menu_CheckTarget [dView]
+   return true
+end menu_CheckTarget
 
 
 --> Global | ListenNotes | Podcast | Line | Menu
 -
-on menu_DisplayEpisodeArray displayView
-   put the top_Line of displayView 
-   put the parent_Array ["id"] of displayView into episodeID
+on menu_DisplayEpisodeArray dView
+   put the parent_Array ["id"] of dView into episodeID
    --
    put listenNotes_FetchEpisodeArray (episodeID) into episodeArray
-   display_Data episodeArray, "episodeArray", "ListenNotes"
+   --
+   put episodeArray ["title"] into episodeTitle
+   display_Data episodeArray, episodeTitle, "listenNotes_FetchEpisodeArray()"
 end menu_DisplayEpisodeArray
 
 on _
 end _
 
+on menu_Test dView
+   put the parent_Array ["id"] of dView
+end menu_Test
+
 on submenu_Dev
-   return "Dev | Menu"
+   return menu_DevTitle ("Global | ListenNotes | Podcast | Line | Menu")
 end submenu_Dev
-
-
---> Dev | Menu
--
-on menu_Experiment displayView
-   put displayView
-end menu_Experiment
-
-
---> Deps
--

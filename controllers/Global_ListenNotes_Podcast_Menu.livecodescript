@@ -74,13 +74,6 @@ end menu_DisplayDataGrid
 on _
 end _
 
-on submenu_Dev
-   return "Dev | Menu"
-end submenu_Dev
-
-
---> Dev | Menu
--
 on menu_DisplayPodcastPageArray podcastID
    put listenNotes_FetchPodcastPageArray (podcastID) into pageArray
    display_PageArray pageArray
@@ -91,6 +84,10 @@ on menu_FindEpisode podcastID
    --
    put listenNotes_FetchEpisodeArray (podcastID) into episodeArray
 end menu_FindEpisode
+
+on submenu_Dev
+   return menu_DevTitle ("Global | ListenNotes | Podcast | Menu")
+end submenu_Dev
 
 
 --> Deps

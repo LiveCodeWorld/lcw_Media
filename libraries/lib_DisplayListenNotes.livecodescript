@@ -14,18 +14,9 @@ We put the display handlers here so that we can document a clean lib_ListenNotes
 
 --> Working on
 -
-command listenNotes_CreatePodcastWikipage episodeArray, pWikiDomain
-   if pWikiDomain is empty then put "cast.pod.club" into pWikiDomain
-   
-   put listenNotes_ConstructPodcastPageArray (episodeArray) into pageArray
-   --
-   put episodeArray ["title"] into podcastTitle
-   put fedwiki_ConstructSlug (podcastTitle) into pageSlug
-   pageArray_Set pWikiDomain, pageSlug, pageArray
-   --
-   put the result into wikiUrl
-   return wikiUrl
-end listenNotes_CreatePodcastWikipage
+on mDoubleUp_Episode dView, sKey, sPath
+   put sPath
+end mDoubleUp_Episode
 
 function listenNotes_ApiDocumentationUrl
    return "https://www.listennotes.com/api/docs/"
