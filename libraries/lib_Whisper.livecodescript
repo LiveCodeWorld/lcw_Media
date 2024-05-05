@@ -202,7 +202,8 @@ command openAI_TextToSpeech someText, pAudioFile, pWhisperVoice, pUseHD
    if pAudioFile is empty then put the tempname & ".mp3" into pAudioFile
    
    # Construct postData
-   put someText into postData ["input"]
+   put textEncode (someText, "UTF-8") into utf8Text
+   put utf8Text into postData ["input"]
    put pWhisperVoice into postData ["voice"]
    put "https://api.openai.com/v1/audio/speech" into restURL
    
@@ -211,6 +212,11 @@ command openAI_TextToSpeech someText, pAudioFile, pWhisperVoice, pUseHD
    -- put textEncode (someAudio, "UTF-8") into someAudio
    
    # Create audio file
+   put pAudioFile into audioFolder
+   set the itemdelimiter to slash
+   put empty into audioFolder
+   folder_CreateNested audioFolder
+   --
    put someAudio into url ("binfile:" & pAudioFile)
    --
    return pAudioFile
