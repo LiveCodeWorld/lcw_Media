@@ -28,10 +28,10 @@ end preOpenStack
 
 --> Custom
 -
-command project_CustomInit
+command project_PostInit
    -- do something cool
    -- set the loc of me to the screenloc
-end project_CustomInit
+end project_PostInit
 
 
 --> Events

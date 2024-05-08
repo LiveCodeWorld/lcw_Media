@@ -929,7 +929,7 @@ function flickr_FetchPhotoArray urlOrFolder
          put urlOrFolder into someFolder
          folder_Format someFolder
          put someFolder & "recordArray" into someFile
-         put array_Fetch (someFile) into photoArray
+         put array_Get (someFile) into photoArray
          return photoArray
    end switch
 end flickr_FetchPhotoArray
@@ -937,7 +937,7 @@ end flickr_FetchPhotoArray
 on flickr_SavePhotoArray someFolder, photoArray
    folder_Format someFolder
    put someFolder & "recordArray" into someFile
-   array_Save someFile, photoArray
+   array_Set someFile, photoArray
 end flickr_SavePhotoArray
    
    
@@ -946,14 +946,14 @@ end flickr_SavePhotoArray
 function flickr_FetchTagArray someFolder
    folder_Format someFolder
    put someFolder & "tagArray" into someFile
-   put array_Fetch (someFile) into tagArray
+   put array_Get (someFile) into tagArray
    return tagArray
 end flickr_FetchTagArray
 
 on flickr_SaveTagArray someFolder, tagArray
    folder_Format someFolder
    put someFolder & "tagArray" into someFile
-   array_Save someFile, tagArray
+   array_Set someFile, tagArray
 end flickr_SaveTagArray
 
 on flickr_StorePhotoArray urlOrFolder, photoArray
