@@ -14,21 +14,6 @@ version: 0.2
 --> Working on
 -
 
---> Move
--
-command wikiServer_Restart pNotify, pNotifyText
-   if pNotify is not false then
-      if pNotifyText is empty then put "Restarted wiki server!" into pNotifyText
-      lcw_Notify pNotifyText
-   end if
-   
-   put view_GetTemplateObject ("View|Wiki|Server") into serverObject
-   set the daemon_IsRunning of serverObject to false
-   set the daemon_IsRunning of serverObject to true
-   return serverObject
-end wikiServer_Restart
-
-
 --> Transcribe
 -
 command transcribe_AddTidied @pageArray, sTranscript, pTidySlug, pNotify
