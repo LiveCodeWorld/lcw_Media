@@ -41,6 +41,57 @@ command listenNotes_CreatePodcastWikipage episodeArray, pWikiDomain
 end listenNotes_CreatePodcastWikipage
 
 
+--> PageArray | ListenNotes
+-
+command pageArray_AddEpisodeUpdateButton @pageArray, podcastID, pPageTitle
+   put LcwRestUrl & "/podcast/updateRecent" into postURL
+   --
+   put podcastID into hiddenKeyValueArray ["podcastID"]
+   if pPageTitle is not empty then put pPageTitle into hiddenKeyValueArray ["pageTitle"]
+   --
+   pageArray_AddButton pageArray, "Update Recent", postURL, hiddenKeyValueArray
+end pageArray_AddEpisodeUpdateButton
+
+
+--> Podcast
+-
+function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonCommand
+   if pButtonCommand is empty then put "importPodcast" into pButtonCommand
+   --
+   put LcwRestUrl & "/podcast/" & pButtonCommand into postURL
+   --
+   if pUseLabel is true then
+      put "Import" into buttonName
+      put "[[" & podcastTitle & "]]" into pLabel
+   else
+      put podcastTitle into buttonName
+      put empty into pLabel
+   end if
+   --
+   put podcastTitle into inputKeyValueArray ["podcastTitle"]
+   put podcastID into inputKeyValueArray ["podcastID"]
+   --
+   put fedwiki_ConstructButtonForm (buttonName, postURL, inputKeyValueArray, pLabel) into someHTML
+   return someHTML
+end podcast_ConstructButton
+
+function podcast_ConstructButtonTemplate pUseLabel
+   put LcwRestUrl & "/podcast/importPodcast" into postURL
+   --
+   put "{{podcastTitle}}" into curlyTitle
+   if pUseLabel is true then
+      put "Import" into buttonName
+      put "[[" & curlyTitle & "]]" into pLabel
+   else
+      put curlyTitle into buttonName
+      put empty into pLabel
+   end if
+   --
+   put fedwiki_ConstructButtonForm (buttonName, postURL, "podcastTitle", curlyTitle, pLabel) into someHTML
+   return someHTML
+end podcast_ConstructButtonTemplate
+
+
 --> ListenNotes | Fetch
 -
 function listenNotes_FetchPodcastPageArray podcastID
@@ -226,74 +277,6 @@ function listenNotes_RestGet apiPath, paramArray, pVersion
    --
    return rJSON
 end listenNotes_RestGet
-
-
---> PageArray | ListenNotes
--
-command pageArray_AddRssButton @pageArray, podcastRSS, pTitle, pWikiDomain, pRssLastUpdated, pDisplayStyle
-   if pTitle is empty then
-      put "Import RSS" into buttonName
-   else
-      put pTitle into buttonName
-   end if
-   --
-   put podcastRSS into hiddenKeyValueArray ["rssURL"]
-   if pTitle is not empty then put pTitle into hiddenKeyValueArray ["pageTitle"]
-   if pWikiDomain is not empty then put pWikiDomain into hiddenKeyValueArray ["wikiDomain"]
-   if pRssLastUpdated is not empty then put pRssLastUpdated into hiddenKeyValueArray ["rssLastUpdated"]
-   if pDisplayStyle is not empty then put pDisplayStyle into hiddenKeyValueArray ["displayStyle"]
-   --
-   put LcwRestUrl & "/podcast/rss" into postURL
-   pageArray_AddButton pageArray, buttonName, postURL, hiddenKeyValueArray
-end pageArray_AddRssButton
-
-command pageArray_AddEpisodeUpdateButton @pageArray, podcastID, pPageTitle
-   put LcwRestUrl & "/podcast/updateRecent" into postURL
-   --
-   put podcastID into hiddenKeyValueArray ["podcastID"]
-   if pPageTitle is not empty then put pPageTitle into hiddenKeyValueArray ["pageTitle"]
-   --
-   pageArray_AddButton pageArray, "Update Recent", postURL, hiddenKeyValueArray
-end pageArray_AddEpisodeUpdateButton
-
-
---> Podcast
--
-function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonCommand
-   if pButtonCommand is empty then put "importPodcast" into pButtonCommand
-   --
-   put LcwRestUrl & "/podcast/" & pButtonCommand into postURL
-   --
-   if pUseLabel is true then
-      put "Import" into buttonName
-      put "[[" & podcastTitle & "]]" into pLabel
-   else
-      put podcastTitle into buttonName
-      put empty into pLabel
-   end if
-   --
-   put podcastTitle into inputKeyValueArray ["podcastTitle"]
-   put podcastID into inputKeyValueArray ["podcastID"]
-   --
-   put fedwiki_ConstructButtonForm (buttonName, postURL, inputKeyValueArray, pLabel) into someHTML
-   return someHTML
-end podcast_ConstructButton
-
-function podcast_ConstructButtonTemplate pUseLabel
-   put LcwRestUrl & "/podcast/importPodcast" into postURL
-   --
-   put "{{podcastTitle}}" into curlyTitle
-   if pUseLabel is true then
-      put "Import" into buttonName
-      put "[[" & curlyTitle & "]]" into pLabel
-   else
-      put curlyTitle into buttonName
-      put empty into pLabel
-   end if
-   --
-   put fedwiki_ConstructButtonForm (buttonName, postURL, "podcastTitle", curlyTitle, pLabel) into someHTML
-   return someHTML
-end podcast_ConstructButtonTemplate
 
 
 --> ListenNotes | Scrape

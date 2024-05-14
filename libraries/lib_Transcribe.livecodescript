@@ -85,7 +85,7 @@ function transcribe_EditPage lastPageSlug, wikiDomain
    */
    
    # Fetch dialogue from "dialogue.fedwiki.org"
-   put wikiPage_Dialogue (lastPageSlug, wikiDomain, "transcription-dialogue", "Transcribe Page") into editPageArray
+   put wikiDialogue_Get (lastPageSlug, wikiDomain, "transcription-dialogue", "Transcribe Page") into editPageArray
    
    # Add Create Section
    wikiPage_AddCreateButtons editPageArray, wikiDomain, lastPageSlug
