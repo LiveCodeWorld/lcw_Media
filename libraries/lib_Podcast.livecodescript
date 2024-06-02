@@ -34,7 +34,7 @@ end podclub_FetchPodcastIndex
 
 command podclub_StorePodcastIndex podcastIndex
    put podcast_GetWikiDomain() into wikiDomain
-   put fedwiki_MarkdownIndex (podcastIndex) into markdownIndex
+   put markdown_LinkedBullets (podcastIndex) into markdownIndex
    pageArray_StoreItemModel wikiDomain, "podcast-index", "177c38e4139ed7de", markdownIndex
    put the result into wikipageURL
    return wikipageURL
