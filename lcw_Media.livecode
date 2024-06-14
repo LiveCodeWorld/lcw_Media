@@ -14,18 +14,6 @@ getprop project_Deps
 end project_Deps
 
 
---> Events
--
-on preOpenStack 
-   if the short name of the defaultstack is not the short name of me then
-      pass preOpenStack
-   else
-      lcw_Init
-      env_RecursivelyLoadProjects
-   end if
-end preOpenStack
-
-
 --> Custom
 -
 command project_PostInit
@@ -36,7 +24,8 @@ end project_PostInit
 
 --> Events
 -
-on preOpenStack 
+on preOpenStack
+   breakpoint
    if the short name of the defaultstack is not the short name of me then
       pass preOpenStack
    else

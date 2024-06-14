@@ -48,3 +48,17 @@ on menu_DownloadIcon imageView
    put noun_DownloadIcon (iconID) into downloadData
    display_Data downloadData, "noun_DownloadIcon()"
 end menu_DownloadIcon
+
+private on __
+end __
+
+on menu_EditBehavior imageView
+   put the behavior of  imageView into bObject
+   edit the script of bObject
+end menu_EditBehavior
+
+on menu_DisplayTemplate imageView
+   put the template_Object of imageView into tObject
+   object_GoTo tObject, true
+end menu_DisplayTemplate
+

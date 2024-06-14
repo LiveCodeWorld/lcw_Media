@@ -149,8 +149,19 @@ end image_URL
 command LayoutControl pRect
    if pRect is empty then put the rect of me into pRect
    
-   put the fitInside_Rect [pRect] of me into pRect
-   set the rect of me to pRect
+   switch the uOPN ["resize_Style"] of me
+      case "resize"
+         put pRect into imageRect
+         break
+      case "square"
+         put rect_GetSquare (pRect) into imageRect
+         break
+      case "inside"
+      default
+         put the fitInside_Rect [pRect] of me into imageRect
+   end switch
+   --
+   set the rect of me to imageRect
 end LayoutControl
 
 getprop fitInside_Rect [pRect]
@@ -165,13 +176,13 @@ end fitInside_Rect
 
 --> Deps
 -
-function rect_FitInside fWidth, fHeight, someRect
+function rect_FitInside fWidth, fHeight, sRect
    if (fWidth > 0 and fHeight > 0) is false then
-      return someRect
+      return sRect
    end if 
    
-   put item 3 of someRect - item 1 of someRect into oWidth
-   put item 4 of someRect - item 2 of someRect into oHeight
+   put item 3 of sRect - item 1 of sRect into oWidth
+   put item 4 of sRect - item 2 of sRect into oHeight
    put oWidth / fWidth into xScaleFactor
    put oHeight / fHeight into yScaleFactor
    --
@@ -179,75 +190,92 @@ function rect_FitInside fWidth, fHeight, someRect
    put fWidth * sFactor into newW
    put fHeight * sFactor into newH
    --
-   put rect_GetCentre (someRect) into someLoc
-   put rect_LocWidthHeight (someLoc, newW, newH) into newRect
+   put rect_GetCentre (sRect) into sLoc
+   put rect_LocWidthHeight (sLoc, newW, newH) into newRect
    return newRect
 end rect_FitInside
 
-function rect_LocWidthHeight someLoc, newW, newH
+function rect_LocWidthHeight sLoc, newW, newH
    put newW/2 into leftBit
    put newW - leftBit into rightBit
-   put item 1 of someLoc into someX
-   put someX - leftBit into item 1 of someRect
-   put someX + rightBit into item 3 of someRect
+   put item 1 of sLoc into someX
+   put someX - leftBit into item 1 of sRect
+   put someX + rightBit into item 3 of sRect
    
    put newH/2 into upBit
    put newH - upBit into downBit
-   put item 2 of someLoc into someY
-   put someY - upBit into item 2 of someRect
-   put someY + downBit into item 4 of someRect
+   put item 2 of sLoc into someY
+   put someY - upBit into item 2 of sRect
+   put someY + downBit into item 4 of sRect
    
-   return someRect
+   return sRect
 end rect_LocWidthHeight
 
-function rect_GetCentre someRect
-   -- removed truncation
-   put item 1 of someRect into someLeft
-   put (item 3 of someRect - someLeft)/2 into halfWidth
-   put item 2 of someRect into someTop
-   put (item 4 of someRect - someTop)/2 into halfHeight
-   put someLeft + halfWidth into item 1 of someMiddle
-   put someTop + halfHeight into item 2 of someMiddle
-   return someMiddle
+function rect_GetCentre sRect
+   put item 1 of sRect into sLeft
+   put (item 3 of sRect - sLeft)/2 into hWidth
+   put item 2 of sRect into sTop
+   put (item 4 of sRect - sTop)/2 into hHeight
+   put sLeft + hWidth into item 1 of sMiddle
+   put sTop + hHeight into item 2 of sMiddle
+   return sMiddle
 end rect_GetCentre
+
+function rect_GetSquare sRect
+   put item 1 of sRect into sLeft
+   put item 2 of sRect into sTop
+   put item 3 of sRect into sRight
+   put item 4 of sRect into sBottom
+   
+   put (sLeft + sRight) / 2 into sCenterX
+   put (sTop + sBottom) / 2 into sCenterY
+   put min (sRight - sLeft, sBottom - sTop) / 2 into sSize
+   
+   put sCenterX - sSize into sNewLeft
+   put sCenterY - sSize into sNewTop
+   put sCenterX + sSize into sNewRight
+   put sCenterY + sSize into sNewBottom
+   --
+   return sNewLeft,sNewTop,sNewRight,sNewBottom
+end rect_GetSquare
 
 
 --> Deps | Not needed?
 -
-function rect_FromWidthAndHeight someRect, sWidth, sHeight
-   put rect_GetCentre (someRect) into someLoc
-   put rect_LocWidthHeight (someLoc, sWidth, sHeight) into sRect
+function rect_FromWidthAndHeight sRect, sWidth, sHeight
+   put rect_GetCentre (sRect) into sLoc
+   put rect_LocWidthHeight (sLoc, sWidth, sHeight) into sRect
    return sRect
 end rect_FromWidthAndHeight
 
-function rect_GetProportional someRect, fWidth, fHeight, pDontCentre
+function rect_GetProportional sRect, fWidth, fHeight, pDontCentre
    -- for an image we can get the original rect
-   rect_SetWidth someRect, fWidth, pDontCentre
-   rect_SetHeight someRect, fHeight, pDontCentre
-   return someRect
+   rect_SetWidth sRect, fWidth, pDontCentre
+   rect_SetHeight sRect, fHeight, pDontCentre
+   return sRect
 end rect_GetProportional
 
-command rect_SetWidth @someRect, newWidth, pDontCentre
+command rect_SetWidth @sRect, newWidth, pDontCentre
    if pDontCentre is true then
-      put item 1 of someRect + newWidth into item 3 of someRect
+      put item 1 of sRect + newWidth into item 3 of sRect
    else
-      put item 1 of rect_GetCentre (someRect) into centreX
+      put item 1 of rect_GetCentre (sRect) into centreX
       put round (newWidth/2) into leftWidth
       put newWidth - leftWidth into rightWidth
-      put centreX - leftWidth into item 1 of someRect
-      put centreX + rightWidth into item 3 of someRect
+      put centreX - leftWidth into item 1 of sRect
+      put centreX + rightWidth into item 3 of sRect
    end if
 end rect_SetWidth
 
-command rect_SetHeight @someRect, newHeight, pDontCentre
+command rect_SetHeight @sRect, newHeight, pDontCentre
    if pDontCentre is true then
-      put item 2 of someRect + newHeight into item 4 of someRect
+      put item 2 of sRect + newHeight into item 4 of sRect
    else
-      put item 2 of rect_GetCentre (someRect) into centreY
+      put item 2 of rect_GetCentre (sRect) into centreY
       put round (newHeight/2) into bottomHeight
       put newHeight - bottomHeight into topHeight
-      put centreY - topHeight into item 2 of someRect
-      put centreY + bottomHeight into item 4 of someRect
+      put centreY - topHeight into item 2 of sRect
+      put centreY + bottomHeight into item 4 of sRect
    end if
 end rect_SetHeight
 
