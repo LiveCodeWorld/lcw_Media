@@ -69,7 +69,7 @@ end graph_Style
 
 setprop graph_Style [dontRender] graphStyle
    put the dot_File of me into dotFile
-   put dot_CommandFromGraphStyle (graphStyle) into dotCommand
+   put dot_LayoutEngine (graphStyle) into dotCommand
    set the graph_Style of me to graphStyle
    if dontRender is true then return dotCommand
    --
