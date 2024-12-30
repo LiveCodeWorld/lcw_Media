@@ -109,9 +109,13 @@ on menu_DisplayDotGraph svgView
    end if
 end menu_DisplayDotGraph
 
-on submenu_Save
-   return menu_CreateTitle ("Global | Dot | Save | Menu")
+-- on submenu_Save
+return "Global | Dot | Save | Menu"
 end submenu_Save
+
+on submenu_Assets
+   return "Global | Svg | Assets | Menu"
+end submenu_Assets
 
 on menu_GraphStyle svgView, graphStyle
    set the graph_Style of svgView to graphStyle
@@ -138,10 +142,6 @@ on menu_ScreenDimensions graphView
    set the stack_Rect of graphView to nRect
 end menu_ScreenDimensions
 
-on submenu_Assets
-   return "Global | Svg | Assets | Menu"
-end submenu_Assets
-
 on menu_Decompose svgView
    put the dot_File of svgView into dotFile
    --
@@ -159,13 +159,19 @@ end menu_Recompose
 private command __
 end __
 
-on menu_LinkArray svgView
-   put the link_Array of svgView into linkArray
-   --
-   put the stack_Label of svgView into graphName
+on menu_HkeyLinkArray svgView
+   -- put the link_Array of svgView into linkArray
+   put the displayed_Hkey of svgView into hKey
    put the graph_Style of svgView into graphStyle
-   display_LinkArray linkArray, graphStyle, graphName
-end menu_LinkArray
+   --
+   display_HkeyLinkArray hkey, graphStyle
+   put the result into dView
+end menu_HkeyLinkArray
+
+getprop disabled_HkeyLinkArray [svgView]
+   put the displayed_Hkey of svgView into hKey
+   return hKey is empty
+end disabled_HkeyLinkArray
 
 on menu_DataViewData svgView
    put the dv_Data of svgView into dvData
@@ -206,4 +212,3 @@ end menu_SvgTools
 on submenu_Dev
    return menu_DevTitle ("Global | Image | SVG | Menu")
 end submenu_Dev
-
