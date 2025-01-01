@@ -22,7 +22,6 @@ curl -X GET --include 'https://listen-api.listennotes.com/api/v2/podcasts/4d3fe7
 --> Variables
 -
 constant ListenNotes_BaseRestURL = "https://listen-api.listennotes.com/api/v2/"
-constant LcwRestUrl = "http://rest.livecode.world" -- "http://rest.livecode.world"
 
 
 --> Working on
@@ -44,7 +43,7 @@ end listenNotes_CreatePodcastWikipage
 --> PageArray | ListenNotes
 -
 command pageArray_AddEpisodeUpdateButton @pageArray, podcastID, pPageTitle
-   put LcwRestUrl & "/podcast/updateRecent" into postURL
+   put platform_RestUrl() & "/podcast/updateRecent" into postURL
    --
    put podcastID into hiddenKeyValueArray ["podcastID"]
    if pPageTitle is not empty then put pPageTitle into hiddenKeyValueArray ["pageTitle"]
@@ -58,7 +57,7 @@ end pageArray_AddEpisodeUpdateButton
 function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonCommand
    if pButtonCommand is empty then put "importPodcast" into pButtonCommand
    --
-   put LcwRestUrl & "/podcast/" & pButtonCommand into postURL
+   put platform_RestUrl() & "/podcast/" & pButtonCommand into postURL
    --
    if pUseLabel is true then
       put "Import" into buttonName
@@ -76,7 +75,7 @@ function podcast_ConstructButton podcastTitle, podcastID, pUseLabel, pButtonComm
 end podcast_ConstructButton
 
 function podcast_ConstructButtonTemplate pUseLabel
-   put LcwRestUrl & "/podcast/importPodcast" into postURL
+   put platform_RestUrl ("/podcast/importPodcast") into postURL
    --
    put "{{podcastTitle}}" into curlyTitle
    if pUseLabel is true then
@@ -493,7 +492,7 @@ function listenNotes_FoundPageArray foundEpisodeData
       put CR & "<p/>" after episodeThumbHTML
       
       -- add button
-      put LcwRestUrl & "/podcast/importEpisode" into postURL
+      put platform_RestUrl ("/podcast/importEpisode") into postURL
       put episodeID into inputKeyValueArray ["episodeID"]
       put fedwiki_ConstructButtonForm ("Import Episode", postURL, inputKeyValueArray, empty, "center") into buttonHTML
       put CR & buttonHTML after episodeThumbHTML
@@ -603,7 +602,7 @@ private command _addPodcastSearchForm @pageArray, podcastID, podcastTitle
    -- put podcast_ConstructButton (podcastTitle, podcastID, false, "findEpisodeInPodcast") into formHTML
    put "findEpisodeInPodcast" into formHandlerName
    --
-   put LcwRestUrl & "/podcast/" & formHandlerName into postURL
+   put platform_RestUrl ("/podcast/") & formHandlerName into postURL
    put podcastID into hiddenKeyValueArray ["podcastID"]
    put podcastTitle into hiddenKeyValueArray ["podcastTitle"] -- not needed
    --
@@ -615,7 +614,8 @@ end _addPodcastSearchForm
 private function _ConstructSimpleHeader searchTerm, nextOffsetNum, totalResults, searchTime
    put urlencode (searchTerm) into searchTerm
    --
-   put "<form action='[[LcwRestUrl]]/bbc/listenNotes'>" into someForm
+   put platform_RestUrl ("/bbc/listenNotes") into restUrl
+   put "<form action='[[restUrl]]/'>" into someForm
    put CR & "Found in [[totalResults]] results ([[searchTime]] seconds)&nbsp;" after someForm
    --
    put CR & "<input name='search_Term' value='[[searchTerm]]'  type='hidden'>" after someForm

@@ -140,7 +140,7 @@ function audio_StoppedPagedArray audioPageTitle, wikiDomain
    put audioPageSlug into valueArray ["audioPageSlug"]
    put wikiDomain into valueArray ["wikiDomain"]
    --
-   put "http://rest.livecode.world/transcribe/tidy_Transcript" into postURL
+   put "http://" & platform_RestDomain() & "/transcribe/tidy_Transcript" into postURL
    pageArray_AddButton pageArray, "Tidy Transcript", postURL, valueArray
    
    return pageArray
