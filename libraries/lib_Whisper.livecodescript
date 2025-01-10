@@ -101,7 +101,7 @@ command whisper_Transcribe audioFile, pXtermBrowser
    --
    -- put shell (someShell) into shellResult
    -- ttyd_Paste someShell, xtermView
-   display_Xterm pXtermBrowser, someShell
+   display_Xterm someShell, pXtermBrowser
    --
    set the defaultfolder to oFolder
    return whisperFolder
