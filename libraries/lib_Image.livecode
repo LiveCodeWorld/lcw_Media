@@ -16,82 +16,14 @@ needs sorting and working out what is actually useful.
 
 --> Working on
 -
-function image_DetectType someImage
-   -- based on function "revImageType" of the revbackScript
-   put char 1 to 100 of someImage into tHeader
-   switch tHeader
-      case charToNum (char 1 of tHeader) is 137 AND char 2 to 4 of tHeader is "PNG"
-         return "png"
-      case charToNum (char 1 of tHeader) is among the items of "255,216" and "JFIF" is in tHeader
-         return "jpeg"
-      case "GIF" is in tHeader
-         return "gif"
-         break
-      default
-         return "jpeg"
-         -- return empty
-         -- return "ppm"
-   end switch
-end image_DetectType
-
-
---> View | Icon
--
-command view_CreateIcon libraryView, pIconView
-   if exists(libraryView) is false then
-      beep
-      lcw_Notify "Library (mTarget) view does not exist!"
-      exit to top
-   end if
-   
-   get the mobile_Name of libraryView
-   put the rect of libraryView into someRect
-   put rect_Subtract (-2, someRect) into someRect
-   
-   put the stack_Name of libraryView into stackName
-   put the windowid of stack stackName into someWindowID
-   
-   put the view_IconFile [false] of libraryView into imageFile
-   
-   set the wholeMatches to true
-   put stackName is among the lines of the openstacks into stackOpen
-   if stackOpen is false then object_GoTo libraryView
-   
-   if pIconView is empty then
-      export snapshot from rect someRect of window someWindowID to file imageFile as PNG
-   else
-      export snapshot from rect someRect of window someWindowID to iconImage as PNG
-      set the resized_Image ["60,60"] of pIconView to iconImage
-      put the result into resizedImage
-      put resizedImage into url ("binfile:" & imageFile)
-      set the image_File of pIconView to imageFile
-   end if
-   
-   if stackOpen is false then close stack stackName
-   return imageFile
-end view_CreateIcon
-
-function view_IconUrl vName, pDontCreate
-   put library_TextUrl ("icon.png", vName, "view", pDontCreate) into someUrl
-   return someUrl
-end view_IconUrl
-
-function view_LocalIconFile vName, pDontCreate
-   view_NormalizeName vName
-   put library_TextFile ("icon.png", vName, "view", pDontCreate) into localFile
-   return localFile
-end view_LocalIconFile
-
-command view_DeleteIcon vName
-   view_NormalizeName vName
-   put library_TextFile ("icon.png", vName, "view", true) into someFile
-   delete file someFile
-   return someFile
-end view_DeleteIcon
-
 
 --> Image | Snapshot
 -
+getprop image_PNG
+   export snapshot from the target to pngData as PNG
+   return pngData
+end image_PNG
+
 getprop object_SnapShot [imageType]
    -- export snapshot from pControl to image "dgDragImage" of me as PNG
    -- export snapshot from _BrowserWidget() to somePNG as PNG -- bug: returns half the data
@@ -239,6 +171,82 @@ on image_SnapshotStack stackObject, someFile, imageFileType
     set the filetype to oFileType
     return someFile
 end image_SnapshotStack
+
+
+--> Image
+-
+function image_DetectType someImage
+   -- based on function "revImageType" of the revbackScript
+   put char 1 to 100 of someImage into tHeader
+   switch tHeader
+      case charToNum (char 1 of tHeader) is 137 AND char 2 to 4 of tHeader is "PNG"
+         return "png"
+      case charToNum (char 1 of tHeader) is among the items of "255,216" and "JFIF" is in tHeader
+         return "jpeg"
+      case "GIF" is in tHeader
+         return "gif"
+         break
+      default
+         return "jpeg"
+         -- return empty
+         -- return "ppm"
+   end switch
+end image_DetectType
+
+
+--> View | Icon
+-
+command view_CreateIcon libraryView, pIconView
+   if exists(libraryView) is false then
+      beep
+      lcw_Notify "Library (mTarget) view does not exist!"
+      exit to top
+   end if
+   
+   get the mobile_Name of libraryView
+   put the rect of libraryView into someRect
+   put rect_Subtract (-2, someRect) into someRect
+   
+   put the stack_Name of libraryView into stackName
+   put the windowid of stack stackName into someWindowID
+   
+   put the view_IconFile [false] of libraryView into imageFile
+   
+   set the wholeMatches to true
+   put stackName is among the lines of the openstacks into stackOpen
+   if stackOpen is false then object_GoTo libraryView
+   
+   if pIconView is empty then
+      export snapshot from rect someRect of window someWindowID to file imageFile as PNG
+   else
+      export snapshot from rect someRect of window someWindowID to iconImage as PNG
+      set the resized_Image ["60,60"] of pIconView to iconImage
+      put the result into resizedImage
+      put resizedImage into url ("binfile:" & imageFile)
+      set the image_File of pIconView to imageFile
+   end if
+   
+   if stackOpen is false then close stack stackName
+   return imageFile
+end view_CreateIcon
+
+function view_IconUrl vName, pDontCreate
+   put library_TextUrl ("icon.png", vName, "view", pDontCreate) into someUrl
+   return someUrl
+end view_IconUrl
+
+function view_LocalIconFile vName, pDontCreate
+   view_NormalizeName vName
+   put library_TextFile ("icon.png", vName, "view", pDontCreate) into localFile
+   return localFile
+end view_LocalIconFile
+
+command view_DeleteIcon vName
+   view_NormalizeName vName
+   put library_TextFile ("icon.png", vName, "view", true) into someFile
+   delete file someFile
+   return someFile
+end view_DeleteIcon
 
 
 --> Image

@@ -478,11 +478,9 @@ function audioboom_ConstructUserClipDateArray audioboomUserClipArray
 end audioboom_ConstructUserClipDateArray
 
 
---> Private
--
 --> Deps
 -
-function secret_Get secretName
+-- function secret_Get secretName
    -- for server use only
    if the environment is not "server" then pass "secret_Get"
    --

@@ -170,7 +170,7 @@ end pinterest_FetchUserInfo
 
 --> Deps
 -
-function secret_Get secretName
+-- function secret_Get secretName
    -- for server use only
    if the environment is not "server" then pass "secret_Get"
    --
