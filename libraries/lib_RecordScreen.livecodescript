@@ -69,6 +69,21 @@ end process_CloseAll
 
 --> Screen | Rect
 -
+function screen_BottomRight pWidth, pMargin
+   if pWidth is empty then put 340 into pWidth
+   if pMargin is empty then put 32 into pMargin
+   --
+   put the screenrect into cRect
+   rect_SubtractMargins cRect, pMargin
+   --
+   put round (9/16 * pWidth) into cHeight
+   --
+   put item 3 of cRect - pWidth into item 1 of cRect
+   put item 4 of cRect - cHeight into item 2 of cRect
+   --
+   return cRect
+end screen_BottomRight
+
 function screen_RectFromLoc gLoc
    get the screenRects
    repeat with lineNum = 1 to the number of lines of it
@@ -267,7 +282,7 @@ end screen_GetShortFile
 command screen_SetShortFile shortFile
    put shortFile into LocalArray ["shortFile"]
 end screen_SetShortFile
-   
+
 function screen_GetCastFolder
    put LocalArray ["screenCastFolder"] into screenCastFolder
    if there is not a folder screenCastFolder then
