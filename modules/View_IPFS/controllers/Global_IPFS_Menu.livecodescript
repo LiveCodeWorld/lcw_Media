@@ -9,11 +9,33 @@ version: 0.2
 
 --> Menu | Props
 -
-getprop menu_Target
-   if exists (group 1 of stack "View|IPFS") is false then pass menu_Target
+getprop menu_Target [tObject]
+   put the long id of tObject into tObject
+   switch word 1 of tObject
+      case "button"
+      case "card"
+         -- display_DebugHistory
+         -- exit to top
+         break
+      case "widget"
+         break
+   end switch
+   
+   put the browser_View of tObject into bView
+   if exists (bView) then return bView
+   
+   put display_GetObject(tObject) into dView
+   put the browser_View of dView into bView
+   if exists (bView) then return bView
+   
+   return _IpfsView()
+end menu_Target
+
+private function _IpfsView
+   if exists (group 1 of stack "View|IPFS") is false then return empty
    put the long id of group 1 of stack "View|IPFS" into vObject
    return vObject
-end menu_Target
+end _IpfsView
 
 getprop menu_CheckTarget [ipfsView]
    return exists (group 1 of stack "View|IPFS")
@@ -165,6 +187,10 @@ on menu_DisplayIpfsUrl ipfsView, urlName
       case "Rif Cafe"
          put "https://ipfs.io/ipfs/QmeJYxFe2gETNaVkxVzveiufVCjqzFC8Y5yyJD2i5S9SDM?filename=Rif%20Cafe.m4v" into ipfsURL
          break
+      case "Hitchiker"
+         put "QmWKGLKMFF3nM2VkxU9gCvt8UHfjXMTwBWZtgLH4H3y6YX" into cid
+         put merge ("http://127.0.0.1:8080/ipfs/[[cid]]") into ipfsURL
+         break
       case "Added"
          put "QmRTj1RFZc52SYFYwNhEGo6kjEm2Cb9P2rbhCuBPTHb5J8" into cid
          put merge ("http://127.0.0.1:8080/ipfs/[[cid]]/cat.jpg") into ipfsURL
@@ -200,12 +226,14 @@ on menu_DisplayIpfsCatPicture ipfsView
    
    set the browser_URL of ipfsView to ipfsURL
    --
-   set the image_FileName of ipfsView to empty
-   set the text of image 1 of ipfsView to url ipfsURL
-   --set the image_FileName of ipfsView to ipfsURL
-   set the display_Type of ipfsView to "image"
-   --
-   -- launch url ipfsURL
+   if exists (image 1 of ipfsView) then
+      set the image_FileName of ipfsView to empty
+      set the text of image 1 of ipfsView to url ipfsURL
+      --set the image_FileName of ipfsView to ipfsURL
+      set the display_Type of ipfsView to "image"
+      --
+      -- launch url ipfsURL
+   end if
 end menu_DisplayIpfsCatPicture
 
 on _
