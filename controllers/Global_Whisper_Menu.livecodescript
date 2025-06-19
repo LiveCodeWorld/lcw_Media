@@ -79,11 +79,15 @@ private on _
 end _
 
 on submenu_InstallWhisper
-   return menu_CreateTitle ("Global | Whisper | Menu", "Install")
+   return "Global | Whisper | Install | Menu"
 end submenu_InstallWhisper
 
 private on __
 end __
+
+on menu_WhisperHelp
+   launch_WhisperHelp
+end menu_WhisperHelp
 
 on submenu_Dev
    return menu_DevTitle ("Global | Whisper | Menu")

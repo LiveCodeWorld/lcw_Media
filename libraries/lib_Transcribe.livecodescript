@@ -13,16 +13,62 @@ version: 0.2
 
 --> Working on
 -
+function transcribe_ConstructPageAssetFolder pageSlug, pTranscriptDomain
+   if pTranscriptDomain is empty then
+      put "myth" into pTranscriptDomain
+   end if
+   
+   put wikiFile_ConstructAsset (pageSlug, pTranscriptDomain) into pageAssetFolder
+   text_AddTrailing pageAssetFolder, slash
+   return pageAssetFolder
+end transcribe_ConstructPageAssetFolder
 
---> Transcribe
+
+--> Record
 -
-command transcribe_AddTidied @pageArray, sTranscript, pTidySlug, pNotify
-   if pTidySlug is empty then put "tidy-hitchhikers" into pTidySlug
+command record_Start wikiDomain, folderPageTitle, valueArray
+   put wikiFile_Construct (wikiDomain, folderPageTitle) into wikiFile
+   if there is a file wikiFile then
+      put _RecordingProgressPageArray (audioPageTitle, valueArray) into pageArray
+   else
+      put fedwiki_ConstructSlug (folderPageTitle) into folderPageSlug
+      put _RecordingFolderPageArray (valueArray, wikiDomain, folderPageSlug, folderPageTitle) into pageArray
+   end if
+   
+   # Start Recording Audio
+   audio_RecordTranscriptWav audioPageTitle, folderPageTitle, wikiDomain
+   --
+   return pageArray
+end record_Start
+
+
+--> WikiPage | transcript
+-
+function wikiPage_AddTidiedTranscript pageSlug, wikiDomain, pTranscript, pPromptSlug
+   if pTranscript is empty then
+      -- a default in transcript.myth.garden
+      put transcribe_GetWavText (pageSlug, wikiDomain) into pTranscript 
+   end if
+   --
+   put pageArray_Get (wikiDomain, pageSlug) into pageArray
+   transcript_AddTidied pageArray, pTranscript , pPromptSlug
+   --
+   pageArray_StripJournal pageArray
+   pageArray_AddChatGptCred pageArray
+   --
+   return pageArray
+end wikiPage_AddTidiedTranscript
+
+
+--> Transcript
+-
+command transcript_AddTidied @pageArray, sTranscript, pPromptSlug, pNotify
+   if pPromptSlug is empty then put "tidy-hitchhikers" into pPromptSlug
    
    if pNotify is not false then
       lcw_Notify "Using ChatGPT and the 'Tidy Hitchhikers' prompt to tidy the original transcript."
    end if
-   put openAI_GetText (sTranscript, pTidySlug, "gpt-4") into tidiedTranscript -- better if included in "graph-and-summary"
+   put prompt_Process (sTranscript, pPromptSlug, "gpt-4") into tidiedTranscript -- better if included in "graph-and-summary"
    
    switch
       case item 1 of tidiedTranscript is "Error"
@@ -47,8 +93,21 @@ command transcribe_AddTidied @pageArray, sTranscript, pTidySlug, pNotify
    pageArray_AddMarkdown pageArray, "# Tidied Transcript"
    pageArray_AddMarkdown pageArray, tidiedTranscript
    */
-end transcribe_AddTidied
+end transcript_AddTidied
 
+function transcript_Combine tShortFolders, wikiDomain
+   sort numeric items of tShortFolders by word -1 of each
+   repeat for each item tShortFolder in tShortFolders
+      put fedwiki_ConstructSlug (tShortFolder) into pageSlug
+      put transcribe_GetWavText (pageSlug, wikiDomain) & CR after sTranscript
+   end repeat
+   delete char -1 of sTranscript
+   return sTranscript
+end transcript_Combine
+
+
+--> Transcribe
+-
 function transcribe_GetWavText pageSlug, pTranscriptDomain
    put transcribe_TextFile (pageSlug, pTranscriptDomain) into textFile
    if textFile is empty then return empty
@@ -101,7 +160,7 @@ end transcribe_EditPage
 -
 command transcribe_CreateGraphAndSummary pageSlug, wikiDomain
    put transcribe_GetWavText (pageSlug, wikiDomain) into sTranscript
-   put openAI_GetText (sTranscript, "graph-and-summary", "gpt-4") into graphAndSummaryText
+   put prompt_Process (sTranscript, "graph-and-summary", "gpt-4") into graphAndSummaryText
    --
    put transcribe_ConstructGraphAndSummaryFile (pageSlug, wikiDomain) into chatGptFile
    text_Set chatGptFile, graphAndSummaryText
@@ -139,7 +198,7 @@ function transcribe_ConstructGraphAndSummaryFile pageSlug, pTranscriptDomain
    put wavFolder & "chatgpt.txt" into chatGptFile
    return chatGptFile
 end transcribe_ConstructGraphAndSummaryFile
-   
+
 command transcribe_CreateWav oggFile, pageSlug, wikiDomain
    put transcribe_ConstructWavFile (pageSlug, wikiDomain) into wavFile
    if there is a file wavFile then
@@ -259,16 +318,6 @@ function transcribe_PageAssetFolder pageSlug, pTranscriptDomain
    folder_CreateNested pageAssetFolder
    return pageAssetFolder
 end transcribe_PageAssetFolder
-
-function transcribe_ConstructPageAssetFolder pageSlug, pTranscriptDomain
-   if pTranscriptDomain is empty then
-      put "transcript.thought.garden" into pTranscriptDomain
-   end if
-   
-   put wikiFile_ConstructAsset (pageSlug, pTranscriptDomain) into pageAssetFolder
-   text_AddTrailing pageAssetFolder, slash
-   return pageAssetFolder
-end transcribe_ConstructPageAssetFolder
 
 function transcribe_WavFromOgg oggFile
    set the itemdelimiter to "."
