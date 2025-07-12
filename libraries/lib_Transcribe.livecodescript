@@ -140,10 +140,10 @@ end transcribe_GraphAndSummaryFile
 -
 function transcribe_EditPage lastPageSlug, wikiDomain
    /*
-   Used by "get_EditPage" in case "transcript.thought.garden"
+   Used by "get_EditPage" in case "transcript.myth.garden"
    */
    
-   # Fetch dialogue from "dialogue.fedwiki.org"
+   # Fetch dialogue from "dialogue.fedwiki.club"
    put wikiDialogue_Get (lastPageSlug, wikiDomain, "transcription-dialogue", "Transcribe Page") into editPageArray
    
    # Add Create Section
@@ -214,7 +214,7 @@ end transcribe_CreateWav
 
 function transcribe_FindOggFile pageSlug, pTranscriptDomain
    if pTranscriptDomain is empty then
-      put "transcript.thought.garden" into pTranscriptDomain
+      put "transcript.myth.garden" into pTranscriptDomain
    end if
    put transcribe_FindAudioUrl (pageSlug, pTranscriptDomain) into audioURL
    put _AudioFileFromUrl (audioURL) into audioFile
@@ -224,7 +224,7 @@ end transcribe_FindOggFile
 function transcribe_FindAudioUrl pageSlug, pTranscriptDomain
    -- for now this is fixed
    if pTranscriptDomain is empty then
-      put "transcript.thought.garden" into pTranscriptDomain
+      put "transcript.myth.garden" into pTranscriptDomain
    end if
    put pageArray_Get (pTranscriptDomain, "astral-thoughts") into pageArray
    
@@ -244,7 +244,7 @@ function transcribe_AudioFile wikiDomain, pageSlug
    put pageArray_GetFirstItemValue (pageArray, "audio", "text") into audioText
    put line 1 of audioText into audioURL
    
-   -- http://thought.garden/assets/astral-thoughts/023_astral-intelligence.ogg
+   -- http://myth.garden/assets/astral-thoughts/023_astral-intelligence.ogg
    set the itemdelimiter to slash
    put item 5 to -1 of audioURL into relPath
    put item 3 of audioURL into wikiDomain
@@ -269,7 +269,7 @@ end transcribe_TextFile
 
 function transcribe_WavURL pageSlug, pTranscriptDomain
    if pTranscriptDomain is empty then
-      put "transcript.thought.garden" into pTranscriptDomain
+      put "transcript.myth.garden" into pTranscriptDomain
    end if
    put transcribe_ShortAudioFile (pageSlug) into shortFile
    put merge ("http://[[pTranscriptDomain]]/assets/[[pageSlug]]/[[shortFile]]") into wavURL
@@ -329,7 +329,7 @@ end transcribe_WavFromOgg
 --> Private
 -
 private function _AudioFileFromUrl audioURL
-   -- http://thought.garden/assets/astral-thoughts/023_astral-intelligence.ogg
+   -- http://myth.garden/assets/astral-thoughts/023_astral-intelligence.ogg
    set the itemdelimiter to slash
    put item 5 to -1 of audioURL into relPath
    put item 3 of audioURL into wikiDomain

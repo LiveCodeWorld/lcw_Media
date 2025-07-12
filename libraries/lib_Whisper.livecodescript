@@ -39,6 +39,14 @@ end display_Magic
 
 --> Working on
 -
+function pageArray_SectionOrCode pageArray
+   put pageArray_GetFirstCode (pageArray) into sPrompt
+   if sPrompt is empty then
+      put pageArray_GetSectionText (pageArray, "Prompt") into sPrompt
+   end if
+   return sPrompt
+end pageArray_SectionOrCode
+
 function whisper_AssetFolder
    put project_GetFolder ("lcw_Media") into projectFolder
    put module_GetFolder ("View_Audio", projectFolder) into moduleFolder
@@ -215,61 +223,6 @@ function transcript_ConstructPageArray pageSlug, wikiDomain, pageTitle
    put pageArray_Construct (dTitle, sTranscript) into pageArray
    return pageArray
 end transcript_ConstructPageArray
-
-
---> Prompty
--
-function prompt_Process userText, promptSlug, pModel
-   put prompt_Get (promptSlug) into sPrompt
-   put openAI_FetchChatData (userText, sPrompt, pModel) into rData
-   if item 1 of rData is "Error" then
-      wikiServer_Restart true, rData
-      return rData
-   else
-      put rData ["choices"][1]["message"]["content"] into sText
-      return sText
-   end if
-end prompt_Process
-
-function prompt_List
-   put prompt_Domain() into promptDomain
-   put fedwiki_ListSitemapTitles (promptDomain) into pTitles
-   --
-   filter pTitles without "* Template"
-   line_Delete "Edit Page", pTitles
-   line_Delete "Welcome Visitors", pTitles
-   --
-   sort pTitles
-   return pTitles
-end prompt_List
-
-function prompt_Fetch pageSlug, pProtocol, pPort
-   put prompt_Domain() into wikiDomain
-   put pageArray_Fetch (wikiDomain, pageSlug, pPort, pProtocol) into pageArray
-   --
-   put pageArray_SectionOrCode (pageArray) into sPrompt
-   return sPrompt
-end prompt_Fetch
-
-function prompt_Get pageSlug
-   put prompt_Domain() into promptDomain
-   put pageArray_Get (promptDomain, pageSlug) into pageArray
-   --
-   put pageArray_SectionOrCode (pageArray) into sPrompt
-   return sPrompt
-end prompt_Get
-
-function pageArray_SectionOrCode pageArray
-   put pageArray_GetFirstCode (pageArray) into sPrompt
-   if sPrompt is empty then
-      put pageArray_GetSectionText (pageArray, "Prompt") into sPrompt
-   end if
-   return sPrompt
-end pageArray_SectionOrCode
-
-function prompt_Domain
-   return "prompt.vibefish.club"
-end prompt_Domain
 
 
 --> Whisper

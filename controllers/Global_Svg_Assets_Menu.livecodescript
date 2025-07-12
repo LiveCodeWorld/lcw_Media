@@ -84,7 +84,7 @@ on menu_DisplaySvgXml svgView
 end menu_DisplaySvgXml
 
 on menu_UploadSvg svgView
-   put "livecode.world" into wikiDomain
+   put "livecode.wiki" into wikiDomain
    put "graph" into shortFolder
    --
    put the svg_File of svgView into svgFile
@@ -115,9 +115,9 @@ end menu_RevealSvg
 put _DisplayedObject (svgView) into scriptObject
 put the project_Folder of scriptObject into projectFolder
 
--- put "http://livecode.world/graphs/graph.html" into someUrl
-asset_DownloadHtml "http://livecode.world/graphs/graph.html", projectFolder
-asset_DownloadHtml "https://livecode.world/graphs/graphviz.html", projectFolder
+-- put "http://livecode.wiki/graphs/graph.html" into someUrl
+asset_DownloadHtml "http://livecode.wiki/graphs/graph.html", projectFolder
+asset_DownloadHtml "https://livecode.wiki/graphs/graphviz.html", projectFolder
 asset_DownloadHtml "http://js.cytoscape.org/demos/aedff159b0df05ccfaa5/", projectFolder, "cats.html"
 end menu_DownloadAssets
 

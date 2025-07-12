@@ -439,7 +439,7 @@ function listenNotes_ConstructEpisodePageArray episodeID, pEpisodeURL
    end repeat
    
    /*
-   pageArray_AddMonkeyKeyWordSection pageArray, someText
+   pageArray_AddKeyWordSection pageArray, someText
    */
    
    --now add podcast section

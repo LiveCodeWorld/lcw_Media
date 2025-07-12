@@ -17,7 +17,7 @@ local LocalArray
 --> Working on
 -
 command audio_RecordTranscriptWav audioPageTitle, folderPageTitle, pWikiDomain
-   if pWikiDomain is empty then put "http://transcript.thought.garden/" into pWikiDomain
+   if pWikiDomain is empty then put "http://transcript.myth.garden/" into pWikiDomain
    
    put audioPageTitle into LocalArray ["audioPageTitle"]
    put folderPageTitle into LocalArray ["folderPageTitle"]
