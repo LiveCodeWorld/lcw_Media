@@ -83,12 +83,77 @@ getprop checked_ScreenDimensions [graphView]
    return sBoolean
 end checked_ScreenDimensions
 
+private function _AssetFile svgView, shortFile
+   put _SvgFolder (svgView) into svgFolder
+   return svgFolder & shortFile
+end _AssetFile
+
+private function _SvgFolder svgView
+   put the svg_File of svgView into svgFolder
+   set the itemdelimiter to slash
+   put empty into item -1 of svgFolder
+   return svgFolder
+end _SvgFolder
+
+getprop displayAsset_Params [svgView]
+   put _SvgFolder (svgView) into svgFolder
+   put files (svgFolder) into shortFiles
+   return shortFiles & ",-,Svg Folder"
+end displayAsset_Params
+
 
 --> Global | Image | SVG | Menu
 -
+on menu_DisplayAsset svgView, shortFile
+   put _AssetFile (svgView, shortFile) into assetFile
+   
+   set the itemdelimiter to "."
+   switch item -1 of shortFile
+      case "Svg Folder"
+         put _SvgFolder (svgView) into svgFolder
+         finder_Reveal svgFolder
+         break
+      case "dot"
+         display_DotText assetFile
+         break
+      case "svg"
+         finder_Reveal assetFile
+         break
+      case "array"
+         put array_FromFile (assetFile) into sData
+         display_Data sData, shortFile
+         break
+      default
+         put assetFile
+   end switch
+end menu_DisplayAsset
+
+on menu_MoveHandlerFolder svgView
+   put _SvgFolder (svgView) into hkeyFolder
+   set the itemdelimiter to slash
+   put item -1 of hkeyFolder into shortHkey
+   
+   put "Move hander metadata '[[shortHkey]]' folder to handler wiki?" into sQuestion
+   lcw_Answer sQuestion, svgView, shortFolder
+   
+   old_MoveHandlerFolder hkeyFolder
+   --
+   put the result into wikiHandlerFolder
+   if item 1 of wikiHandlerFolder = "Error" then
+      put wikiHandlerFolder
+      lcw_AnswerWarning "New handler folder already exists!", svgView
+   end if
+end menu_MoveHandlerFolder
+
+private command ____
+end ____
+
 on menu_DisplayDotGraph svgView
-   put the dot_File of svgView into dotFile
-   put the graph_Style of svgView into graphStyle
+   breakpoint
+   -- put the dot_File of svgView into dotFile
+   -- put the graph_Style of svgView into graphStyle
+   put the svg_File of svgView into dotFile
+   put the displayed_GraphStyle of svgView into graphStyle
    --
    put the linked_GraphView of svgView into graphView
    if exists (graphView) then
